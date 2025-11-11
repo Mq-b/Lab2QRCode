@@ -12,7 +12,7 @@ include_directories(include)
 set(CMAKE_PREFIX_PATH "D:/dagong/test/vcpkg/installed/x64-windows" ${CMAKE_PREFIX_PATH})
 
 if(MSVC)
-    add_compile_options(/EHsc)
+    add_compile_options(/EHsc /utf-8)
 endif()
 
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)

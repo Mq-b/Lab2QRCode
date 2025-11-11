@@ -1,0 +1,165 @@
+name: Build Test (Windows + Ubuntu)
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.os }} - ${{ matrix.compiler }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            compiler: msvc
+          - os: ubuntu-latest
+            compiler: gcc
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC Developer Command Prompt
+        if: runner.os == 'Windows'
+        uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: x64
+      - name: Verify MSVC compiler works (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "=== 测试 MSVC 编译环境是否可用 ==="
+          $demoDir = "${{ github.workspace }}\demo"
+          mkdir $demoDir | Out-Null
+          Set-Content "$demoDir\main.cpp" @'
+          #include <iostream>
+          int main() {
+              std::cout << "MSVC compile test OK" << std::endl;
+              return 0;
+          }
+          '@
+
+          cd $demoDir
+          Write-Host "调用 cl 编译..."
+          cl /nologo /EHsc main.cpp /Fe:test_demo.exe
+
+          if (!(Test-Path "$demoDir\test_demo.exe")) {
+              Write-Error "❌ MSVC 编译失败，退出执行。"
+              exit 1
+          }
+
+          Write-Host "✅ 编译成功，运行测试程序："
+          & "$demoDir\test_demo.exe"
+
+          Write-Host "🧹 清理测试文件..."
+          Start-Sleep -Milliseconds 300
+          Remove-Item -Recurse -Force $demoDir -ErrorAction SilentlyContinue
+
+      # ---------- Ubuntu Qt Installation ----------
+      - name: Install Qt (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qtbase5-dev qt5-qmake 
+
+      # ---------- Windows Qt Installation ----------
+      - name: Install Qt (Windows)
+        if: runner.os == 'Windows'
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '5.15.2'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+          install-deps: true
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          if ($env:RUNNER_OS -eq "Windows") {
+            # 创建 deps 目录
+            $depsDir = "${{ github.workspace }}\deps"
+            New-Item -ItemType Directory -Path $depsDir -Force | Out-Null
+
+            $opencvZip = "${{ github.workspace }}\deps\opencv.zip"
+            $opencvDir = "${{ github.workspace }}\deps\opencv"
+            Invoke-WebRequest "https://github.com/thommyho/Cpp-OpenCV-Windows-PreBuilts/releases/download/v4.12.0/MSVC142_64.zip" -OutFile $opencvZip
+            Expand-Archive $opencvZip -DestinationPath $opencvDir
+            Remove-Item $opencvZip
+
+            $opencvConfig = "$opencvDir/OpenCVConfig.cmake"
+          @'
+          # Auto-generated OpenCVConfig.cmake
+          set(OpenCV_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/Release/include")
+          set(OpenCV_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/Release/lib")
+          file(GLOB OpenCV_LIB_FILES "${OpenCV_LIB_DIR}/*.lib")
+          add_library(OpenCV::OpenCV STATIC IMPORTED)
+          list(GET OpenCV_LIB_FILES 0 first_lib)
+          set_target_properties(OpenCV::OpenCV PROPERTIES
+              IMPORTED_LOCATION "${first_lib}"
+              INTERFACE_INCLUDE_DIRECTORIES "${OpenCV_INCLUDE_DIRS}"
+              INTERFACE_LINK_LIBRARIES "${OpenCV_LIB_FILES}"
+          )
+          set(OpenCV_LIBS OpenCV::OpenCV)
+          '@ | Out-File -FilePath $opencvConfig -Encoding UTF8 
+
+
+            # 构建 zxing-cpp
+            git clone https://github.com/zxing-cpp/zxing-cpp.git --depth 1
+            cmake -S zxing-cpp -B zxing-cpp/build -G Ninja `
+              -DCMAKE_BUILD_TYPE=Release `
+              -DCMAKE_PREFIX_PATH="$opencvDir;${{ github.workspace }}/deps"
+            cmake --build zxing-cpp/build --config Release
+            cmake --install zxing-cpp/build --prefix "${{ github.workspace }}/deps"
+          } else {
+            sudo apt-get install -y cmake build-essential ninja-build libopencv-dev
+            git clone https://github.com/zxing-cpp/zxing-cpp.git --depth 1
+            cmake -S zxing-cpp -B zxing-cpp/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
+            cmake --build zxing-cpp/build  --parallel
+            sudo cmake --install zxing-cpp/build --prefix /usr/local
+          }
+
+        # ---------- Configure ----------
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          mkdir build
+          cd build
+
+          if ($env:RUNNER_OS -eq "Windows") {
+            $qtPrefix = "$env:QT_ROOT_DIR"
+            Write-Host "Qt安装路径: $qtPrefix"
+            cmake .. -G "Ninja" `
+              -DCMAKE_BUILD_TYPE=Release `
+              -DCMAKE_PREFIX_PATH="$qtPrefix;$opencvDir;${{ github.workspace }}/deps"
+          } else {
+            cmake .. -G Ninja `
+              -DCMAKE_BUILD_TYPE=Release `
+              -DCMAKE_PREFIX_PATH="/usr/local"
+          }
+
+
+      # ---------- Build ----------
+      - name: Build Project
+        shell: pwsh
+        run: |
+          cd build
+          cmake --build . --config Release --parallel
+
+      # ---------- Check artifacts ----------
+      - name: Check artifacts (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Write-Host "构建输出目录内容:"
+          Get-ChildItem -Path "build" -Recurse -Include *.exe,*.dll | ForEach-Object { Write-Host $_.FullName }
+
+      - name: Check artifacts (Ubuntu)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          echo "构建输出目录内容:"
+          tree -L 2 build
