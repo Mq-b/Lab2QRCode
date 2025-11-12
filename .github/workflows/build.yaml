@@ -1,11 +1,8 @@
 name: Build Test (Windows + Ubuntu)
 
-<<<<<<< HEAD
 env:
   release_file: build\Release\bin\Lab2QRCode.exe
 
-=======
->>>>>>> e13e0dc (添加了ubuntu和win的编译流程)
 on:
   push:
   pull_request:
@@ -70,26 +67,16 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-<<<<<<< HEAD
           sudo apt-get install -y qtbase5-dev qt5-qmake
-=======
-          sudo apt-get install -y qtbase5-dev qt5-qmake 
->>>>>>> e13e0dc (添加了ubuntu和win的编译流程)
 
       # ---------- Windows Qt Installation ----------
       - name: Install Qt (Windows)
         if: runner.os == 'Windows'
         uses: jurplel/install-qt-action@v4
         with:
-<<<<<<< HEAD
           version: "5.15.2"
           target: "desktop"
           arch: "win64_msvc2019_64"
-=======
-          version: '5.15.2'
-          target: 'desktop'
-          arch: 'win64_msvc2019_64'
->>>>>>> e13e0dc (添加了ubuntu和win的编译流程)
           install-deps: true
 
       - name: Install dependencies
@@ -157,10 +144,6 @@ jobs:
               -DCMAKE_PREFIX_PATH="/usr/local"
           }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> e13e0dc (添加了ubuntu和win的编译流程)
       # ---------- Build ----------
       - name: Build Project
         shell: pwsh
