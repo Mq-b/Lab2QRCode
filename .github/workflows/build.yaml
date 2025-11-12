@@ -1,7 +1,7 @@
 name: Build Test (Windows + Ubuntu)
 
 env:
-  release_file: build\Release\bin\Lab2QRCode.exe
+  release_file: build/Release/bin/Lab2QRCode.exe
 
 on:
   push:
