@@ -1,5 +1,8 @@
 name: Build Test (Windows + Ubuntu)
 
+env:
+  release_file: build\Release\bin\Lab2QRCode.exe
+
 on:
   push:
   pull_request:
@@ -64,16 +67,16 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y qtbase5-dev qt5-qmake 
+          sudo apt-get install -y qtbase5-dev qt5-qmake
 
       # ---------- Windows Qt Installation ----------
       - name: Install Qt (Windows)
         if: runner.os == 'Windows'
         uses: jurplel/install-qt-action@v4
         with:
-          version: '5.15.2'
-          target: 'desktop'
-          arch: 'win64_msvc2019_64'
+          version: "5.15.2"
+          target: "desktop"
+          arch: "win64_msvc2019_64"
           install-deps: true
 
       - name: Install dependencies
@@ -141,7 +144,6 @@ jobs:
               -DCMAKE_PREFIX_PATH="/usr/local"
           }
 
-
       # ---------- Build ----------
       - name: Build Project
         shell: pwsh
@@ -162,4 +164,22 @@ jobs:
         shell: bash
         run: |
           echo "构建输出目录内容:"
-          tree -L 2 build
+          tree -L 3 build
+          find build/Release/bin -type f -executable
+
+        # 5️⃣ 上传构建产物到 Actions（调试查看）
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: build-artifacts
+          path: "${{ env.release_file }}"
+
+      # 6️⃣ 上传构建产物到 GitHub Release 需要开启读写权限
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag' &&  runner.os == 'Windows'
+        with:
+          files: "${{ env.release_file }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
