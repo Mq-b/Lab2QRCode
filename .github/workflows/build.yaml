@@ -1,8 +1,8 @@
 name: Build Test (Windows + Ubuntu)
-
 env:
   release_file: build/Release/bin/Lab2QRCode.exe
-
+  release_dir: build/Release/bin/
+  release_zip: Lab2QRCode.zip
 on:
   push:
   pull_request:
@@ -158,6 +158,21 @@ jobs:
         run: |
           Write-Host "构建输出目录内容:"
           Get-ChildItem -Path "build" -Recurse -Include *.exe,*.dll | ForEach-Object { Write-Host $_.FullName }
+          # 设置 PATH
+          $env:PATH = "$qtPrefix\bin;$env:PATH"
+          Write-Host "Qt安装路径: $env:QT_ROOT_DIR"
+          Write-Host "PATH=$env:PATH"
+          # 编译
+          cmake --build build --config Release --parallel
+          # 部署 Qt 依赖
+          windeployqt "${{ env.release_file }}"
+
+          Write-Host "📦 压缩目录: ${{ env.release_dir }}"
+          if (Test-Path "${{ env.release_zip }}") {
+            Remove-Item "${{ env.release_zip }}" -Force
+          }
+          Compress-Archive -Path "${{ env.release_dir }}*" -DestinationPath "${{ env.release_zip }}" -Force
+          Write-Host "✅ 打包完成: ${{ env.release_zip }}"
 
       - name: Check artifacts (Ubuntu)
         if: runner.os == 'Linux'
@@ -173,13 +188,13 @@ jobs:
         if: runner.os == 'Windows'
         with:
           name: build-artifacts
-          path: "${{ env.release_file }}"
+          path: "${{ env.release_zip }}"
 
       # 6️⃣ 上传构建产物到 GitHub Release 需要开启读写权限
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag' &&  runner.os == 'Windows'
         with:
-          files: "${{ env.release_file }}"
+          files: "${{ env.release_zip  }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
