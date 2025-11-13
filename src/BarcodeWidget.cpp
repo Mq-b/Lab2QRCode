@@ -7,6 +7,8 @@
 #include <QPixmap>
 #include <QMessageBox>
 #include <QFont>
+#include <QCheckBox>
+#include <QComboBox>
 #include <opencv2/opencv.hpp>
 #include <ZXing/BarcodeFormat.h>
 #include <ZXing/BitMatrix.h>
@@ -56,7 +58,7 @@ BarcodeWidget::BarcodeWidget(QWidget* parent)
 
     // 生成与保存按钮
     auto* buttonLayout = new QHBoxLayout();
-    generateButton = new QPushButton("生成 QRCode", this);
+    generateButton = new QPushButton("生成", this);
     decodeToChemFile = new QPushButton("解码");
     saveButton = new QPushButton("保存", this);
     generateButton->setFixedHeight(40);
@@ -93,6 +95,26 @@ BarcodeWidget::BarcodeWidget(QWidget* parent)
 
     mainLayout->addWidget(scrollArea);
 
+    base64CheckBox = new QCheckBox("Base64", this);
+    base64CheckBox->setFont(QFont("Arial", 14));
+    base64CheckBox->setChecked(true);
+    buttonLayout->addWidget(base64CheckBox);
+
+    auto* comboBoxLayout = new QHBoxLayout();
+    
+    QComboBox* formatComboBox = new QComboBox(this);
+    formatComboBox->setFont(QFont("Consolas", 13));
+
+    for (const auto& item : qAsConst(barcodeFormats)) {
+        formatComboBox->addItem(item);
+    }
+
+    QLabel* formatLabel = new QLabel("选择条码类型:", this);
+    formatLabel->setFont(QFont("Consolas", 12));
+    comboBoxLayout->addWidget(formatLabel);
+    comboBoxLayout->addWidget(formatComboBox);
+    mainLayout->addLayout(comboBoxLayout);
+
     // 连接信号与槽
     connect(browseButton, &QPushButton::clicked, this, &BarcodeWidget::onBrowseFile);
     connect(generateButton, &QPushButton::clicked, this, &BarcodeWidget::onGenerateClicked);
@@ -100,6 +122,11 @@ BarcodeWidget::BarcodeWidget(QWidget* parent)
     connect(saveButton, &QPushButton::clicked, this, &BarcodeWidget::onSaveClicked);
     connect(filePathEdit, &QLineEdit::textChanged, this, [this](const QString& text) {
         updateButtonStates(text);
+    });
+    connect(formatComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [this, formatComboBox](int index) {
+        // 设置当前选择的条码格式
+        currentBarcodeFormat = stringToBarcodeFormat(barcodeFormats[index]);
+        //QMessageBox::information(this, "", barcodeFormatToString(currentBarcodeFormat));
     });
 }
 
@@ -169,9 +196,15 @@ void BarcodeWidget::onGenerateClicked()
     file.close();
 
     try {
-        const std::string text = SimpleBase64::encode(reinterpret_cast<const std::uint8_t*>(data.constData()), data.size());
+        // 是否base64处理通过判断base64CheckBox
+        std::string text;
+        if(base64CheckBox->isChecked()){
+            text = SimpleBase64::encode(reinterpret_cast<const std::uint8_t*>(data.constData()), data.size());
+        }else{
+            text = data.toStdString();
+        }
 
-        ZXing::MultiFormatWriter writer(ZXing::BarcodeFormat::QRCode);
+        ZXing::MultiFormatWriter writer(currentBarcodeFormat);
         writer.setMargin(1);
 
         const auto bitMatrix = writer.encode(text, 300, 300);
@@ -232,7 +265,14 @@ void BarcodeWidget::onDecodeToChemFileClicked()
 
         // Base64 解码
         std::string encodedText = result.text();
-        auto decodedData = SimpleBase64::decode(encodedText);
+        std::vector<std::uint8_t> decodedData;
+        if (base64CheckBox->isChecked()) {
+            decodedData = SimpleBase64::decode(encodedText);
+        }
+        else {
+            decodedData = std::vector<std::uint8_t>(encodedText.begin(), encodedText.end());
+        }
+        
 
         // ✅ 显示部分内容到界面
         QString preview;
@@ -307,4 +347,68 @@ void BarcodeWidget::onSaveClicked()
                 QMessageBox::warning(this, "错误", "无法保存图片.");
         }
     }
+}
+
+QString BarcodeWidget::barcodeFormatToString(ZXing::BarcodeFormat format)
+{
+    static const QMap<ZXing::BarcodeFormat, QString> map = {
+        {ZXing::BarcodeFormat::None,           "None"},
+        {ZXing::BarcodeFormat::Aztec,          "Aztec"},
+        {ZXing::BarcodeFormat::Codabar,        "Codabar"},
+        {ZXing::BarcodeFormat::Code39,         "Code39"},
+        {ZXing::BarcodeFormat::Code93,         "Code93"},
+        {ZXing::BarcodeFormat::Code128,        "Code128"},
+        {ZXing::BarcodeFormat::DataBar,        "DataBar"},
+        {ZXing::BarcodeFormat::DataBarExpanded,"DataBarExpanded"},
+        {ZXing::BarcodeFormat::DataMatrix,     "DataMatrix"},
+        {ZXing::BarcodeFormat::EAN8,           "EAN8"},
+        {ZXing::BarcodeFormat::EAN13,          "EAN13"},
+        {ZXing::BarcodeFormat::ITF,            "ITF"},
+        {ZXing::BarcodeFormat::MaxiCode,       "MaxiCode"},
+        {ZXing::BarcodeFormat::PDF417,         "PDF417"},
+        {ZXing::BarcodeFormat::QRCode,         "QRCode"},
+        {ZXing::BarcodeFormat::UPCA,           "UPCA"},
+        {ZXing::BarcodeFormat::UPCE,           "UPCE"},
+        {ZXing::BarcodeFormat::MicroQRCode,    "MicroQRCode"},
+        {ZXing::BarcodeFormat::RMQRCode,       "RMQRCode"},
+        {ZXing::BarcodeFormat::DXFilmEdge,     "DXFilmEdge"},
+        {ZXing::BarcodeFormat::DataBarLimited, "DataBarLimited"}
+    };
+
+    return map.value(format, "Unknown");
+}
+
+
+ZXing::BarcodeFormat BarcodeWidget::stringToBarcodeFormat(const QString& formatStr)
+{
+    static const QMap<QString, ZXing::BarcodeFormat> map = {
+        {"Aztec",           ZXing::BarcodeFormat::Aztec},
+        {"Codabar",         ZXing::BarcodeFormat::Codabar},
+        {"Code39",          ZXing::BarcodeFormat::Code39},
+        {"Code93",          ZXing::BarcodeFormat::Code93},
+        {"Code128",         ZXing::BarcodeFormat::Code128},
+        {"DataBar",         ZXing::BarcodeFormat::DataBar},
+        {"DataBarExpanded", ZXing::BarcodeFormat::DataBarExpanded},
+        {"DataMatrix",      ZXing::BarcodeFormat::DataMatrix},
+        {"EAN8",            ZXing::BarcodeFormat::EAN8},
+        {"EAN13",           ZXing::BarcodeFormat::EAN13},
+        {"ITF",             ZXing::BarcodeFormat::ITF},
+        {"MaxiCode",        ZXing::BarcodeFormat::MaxiCode},
+        {"PDF417",          ZXing::BarcodeFormat::PDF417},
+        {"QRCode",          ZXing::BarcodeFormat::QRCode},
+        {"UPCA",            ZXing::BarcodeFormat::UPCA},
+        {"UPCE",            ZXing::BarcodeFormat::UPCE},
+        {"MicroQRCode",     ZXing::BarcodeFormat::MicroQRCode},
+        {"RMQRCode",        ZXing::BarcodeFormat::RMQRCode},
+        {"DXFilmEdge",      ZXing::BarcodeFormat::DXFilmEdge},
+        {"DataBarLimited",  ZXing::BarcodeFormat::DataBarLimited}
+    };
+
+    QString key = formatStr.trimmed();
+    key[0] = key[0].toUpper(); // 确保首字母大写以匹配上面的key
+    auto it = map.find(key);
+    if (it != map.end())
+        return it.value();
+
+    return ZXing::BarcodeFormat::None; // 未匹配时返回None
 }

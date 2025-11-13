@@ -3,11 +3,14 @@
 #include <QWidget>
 #include <QImage>
 #include <opencv2/opencv.hpp>
+#include <ZXing/BarcodeFormat.h>
 #include <QScrollArea>
 
 class QLineEdit;
 class QPushButton;
 class QLabel;
+class QCheckBox;
+class QComboBox;
 
 /**
  * @class BarcodeWidget
@@ -26,6 +29,31 @@ public:
      * @param parent 父窗口指针，默认为空指针。
      */
     explicit BarcodeWidget(QWidget* parent = nullptr);
+
+private:
+
+    static inline const QStringList barcodeFormats = {
+        "QRCode",           // ZXing::BarcodeFormat::QRCode
+        "Aztec",            // ZXing::BarcodeFormat::Aztec
+        "Codabar",          // ZXing::BarcodeFormat::Codabar
+        "Code39",           // ZXing::BarcodeFormat::Code39
+        "Code93",           // ZXing::BarcodeFormat::Code93
+        "Code128",          // ZXing::BarcodeFormat::Code128
+        "DataBar",          // ZXing::BarcodeFormat::DataBar
+        "DataBarExpanded",  // ZXing::BarcodeFormat::DataBarExpanded
+        "DataMatrix",       // ZXing::BarcodeFormat::DataMatrix
+        "EAN8",             // ZXing::BarcodeFormat::EAN8
+        "EAN13",            // ZXing::BarcodeFormat::EAN13
+        "ITF",              // ZXing::BarcodeFormat::ITF
+        "MaxiCode",         // ZXing::BarcodeFormat::MaxiCode
+        "PDF417",           // ZXing::BarcodeFormat::PDF417
+        "UPCA",             // ZXing::BarcodeFormat::UPCA
+        "UPCE",             // ZXing::BarcodeFormat::UPCE
+        "MicroQRCode",      // ZXing::BarcodeFormat::MicroQRCode
+        "RMQRCode",         // ZXing::BarcodeFormat::RMQRCode
+        "DXFilmEdge",       // ZXing::BarcodeFormat::DXFilmEdge
+        "DataBarLimited"    // ZXing::BarcodeFormat::DataBarLimited
+    };
 
 private slots:
     /**
@@ -55,6 +83,9 @@ private slots:
      */
     void onSaveClicked();
 
+    static QString barcodeFormatToString(ZXing::BarcodeFormat format);
+    static ZXing::BarcodeFormat stringToBarcodeFormat(const QString& formatStr);
+
 private:
 
     /**
@@ -74,5 +105,7 @@ private:
     QImage lastImage;              /**< 存储最后生成的二维码图像 */
     QByteArray lastDecodedData;    /**< 保存解码后的数据 */
     QScrollArea* scrollArea;       /**< 滚动区域 */
-    
+    QCheckBox* base64CheckBox;     /**< 是否使用base64 */
+    QComboBox* formatComboBox;     /**< 条码格式选择框 */
+    ZXing::BarcodeFormat currentBarcodeFormat = ZXing::BarcodeFormat::QRCode;  /**< 当前选择的条码格式  */
 };
