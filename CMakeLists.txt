@@ -9,7 +9,7 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/build/${CMAKE_BUILD_TYPE}/bin)
 
 include_directories(include)
 
-set(CMAKE_PREFIX_PATH "D:/dagong/test/vcpkg/installed/x64-windows" ${CMAKE_PREFIX_PATH})
+# set(CMAKE_PREFIX_PATH "D:/dagong/test/vcpkg/installed/x64-windows" ${CMAKE_PREFIX_PATH})
 # 是否启用静态链接 Qt
 #set(CMAKE_PREFIX_PATH  $ENV{QT5_15_STATIC} ${CMAKE_PREFIX_PATH})
 
@@ -22,12 +22,7 @@ find_package(Threads REQUIRED)
 find_package(ZXing REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS
-    asio
-    system
-    endian
-    optional
-    smart_ptr
-    random
+    ALL # headeronly无法指定单个库，只能指定ALL
 )
 
 get_target_property(ZXING_INCLUDES ZXing::ZXing INTERFACE_INCLUDE_DIRECTORIES)
@@ -37,17 +32,12 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 add_executable(${PROJECT_NAME} WIN32 ${SOURCES} "logo.rc")
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${ZXING_INCLUDES})
+target_include_directories(${PROJECT_NAME} PRIVATE ${ZXING_INCLUDES}  ${Boost_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     Qt5::Core
     Qt5::Widgets
     ZXing::ZXing
     ${OpenCV_LIBS}
-    Boost::asio
-    Boost::system
-    Boost::endian
-    Boost::optional
-    Boost::smart_ptr
-    Boost::random
+    ${Boost_LIBRARIES}
 )

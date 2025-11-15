@@ -1,94 +1,65 @@
-name: Build Test (Windows + Ubuntu)
-env:
-  release_file: build/Release/bin/Lab2QRCode.exe
-  release_dir: build/Release/bin/
-  release_zip: Lab2QRCode.zip
+name: build and publish windows
+
 on:
   push:
   pull_request:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: ${{ matrix.os }} - ${{ matrix.compiler }}
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            compiler: msvc
-          - os: ubuntu-latest
-            compiler: gcc
+  windows-build:
+    env:
+      release_file: build/Release/bin/Lab2QRCode.exe
+      release_dir: build/Release/bin/
+      release_zip: Lab2QRCode.zip
+      BOOST_ROOT: ./boost
+    name: windows-latest
+    runs-on: windows-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # - name: Cache deps
+      #   uses: actions/cache@v4
+      #   id: cache-deps
+      #   with:
+      #     path: |
+      #       deps
+      #       boost
+      #     key: deps-${{ runner.os }}-msvc-5.12.12-1.80.0
+
       - name: Setup MSVC Developer Command Prompt
-        if: runner.os == 'Windows'
         uses: TheMrMilchmann/setup-msvc-dev@v4
         with:
           arch: x64
-      - name: Verify MSVC compiler works (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Write-Host "=== 测试 MSVC 编译环境是否可用 ==="
-          $demoDir = "${{ github.workspace }}\demo"
-          mkdir $demoDir | Out-Null
-          Set-Content "$demoDir\main.cpp" @'
-          #include <iostream>
-          int main() {
-              std::cout << "MSVC compile test OK" << std::endl;
-              return 0;
-          }
-          '@
 
-          cd $demoDir
-          Write-Host "调用 cl 编译..."
-          cl /nologo /EHsc main.cpp /Fe:test_demo.exe
-
-          if (!(Test-Path "$demoDir\test_demo.exe")) {
-              Write-Error "❌ MSVC 编译失败，退出执行。"
-              exit 1
-          }
-
-          Write-Host "✅ 编译成功，运行测试程序："
-          & "$demoDir\test_demo.exe"
-
-          Write-Host "🧹 清理测试文件..."
-          Start-Sleep -Milliseconds 300
-          Remove-Item -Recurse -Force $demoDir -ErrorAction SilentlyContinue
-
-      # ---------- Ubuntu Qt Installation ----------
-      - name: Install Qt (Ubuntu)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qtbase5-dev qt5-qmake
-
-      # ---------- Windows Qt Installation ----------
       - name: Install Qt (Windows)
-        if: runner.os == 'Windows'
         uses: jurplel/install-qt-action@v4
         with:
           version: "5.12.12"
           target: "desktop"
           arch: "win64_msvc2017_64"
           install-deps: true
+          dir: ${{ github.workspace }}/Qt
+
+      - name: Install Boost
+        id: install-boost
+        uses: MarkusJx/install-boost@v2
+        with:
+          boost_version: 1.84.0
+          boost_install_dir: ${{ github.workspace }}
+          platform_version: 2022
+          toolset: msvc
 
       - name: Install dependencies
         shell: pwsh
         run: |
-          if ($env:RUNNER_OS -eq "Windows") {
-            # 创建 deps 目录
-            $depsDir = "${{ github.workspace }}\deps"
-            New-Item -ItemType Directory -Path $depsDir -Force | Out-Null
-
+          # 创建 deps 目录
+          $depsDir = "${{ github.workspace }}\deps"
+          New-Item -ItemType Directory -Path $depsDir -Force | Out-Null
+          # 下载并配置 OpenCV
             $opencvZip = "${{ github.workspace }}\deps\opencv.zip"
-            $opencvDir = "${{ github.workspace }}\deps\opencv"
+            $opencvDir = "${{ github.workspace }}\deps\OpenCV"
             Invoke-WebRequest "https://github.com/thommyho/Cpp-OpenCV-Windows-PreBuilts/releases/download/v4.12.0/MSVC142_64.zip" -OutFile $opencvZip
             Expand-Archive $opencvZip -DestinationPath $opencvDir
             Remove-Item $opencvZip
@@ -109,61 +80,47 @@ jobs:
           set(OpenCV_LIBS OpenCV::OpenCV)
           '@ | Out-File -FilePath $opencvConfig -Encoding UTF8 
 
-
-            # 构建 zxing-cpp
-            git clone https://github.com/zxing-cpp/zxing-cpp.git --depth 1
-            cmake -S zxing-cpp -B zxing-cpp/build -G Ninja `
-              -DCMAKE_BUILD_TYPE=Release `
-              -DCMAKE_PREFIX_PATH="$opencvDir;${{ github.workspace }}/deps"
-            cmake --build zxing-cpp/build --config Release
-            cmake --install zxing-cpp/build --prefix "${{ github.workspace }}/deps"
-          } else {
-            sudo apt-get install -y cmake build-essential ninja-build libopencv-dev
-            git clone https://github.com/zxing-cpp/zxing-cpp.git --depth 1
-            cmake -S zxing-cpp -B zxing-cpp/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON
-            cmake --build zxing-cpp/build  --parallel
-            sudo cmake --install zxing-cpp/build --prefix /usr/local
-          }
+          # 构建 zxing-cpp
+          git clone https://github.com/zxing-cpp/zxing-cpp.git --depth 1
+          cmake -S zxing-cpp -B zxing-cpp/build -G Ninja -DCMAKE_BUILD_TYPE=Release 
+          cmake --build zxing-cpp/build --config Release
+          cmake --install zxing-cpp/build --prefix "${{ github.workspace }}/deps"
 
         # ---------- Configure ----------
-      - name: Configure CMake
+      - name: Configure CMake And Build Project
         shell: pwsh
         run: |
-          mkdir build
-          cd build
+          Write-Host "Qt安装路径: ${env:QT_ROOT_DIR}"
 
-          if ($env:RUNNER_OS -eq "Windows") {
-            $qtPrefix = "$env:QT_ROOT_DIR"
-            Write-Host "Qt安装路径: $qtPrefix"
-            cmake .. -G "Ninja" `
-              -DCMAKE_BUILD_TYPE=Release `
-              -DCMAKE_PREFIX_PATH="$qtPrefix;$opencvDir;${{ github.workspace }}/deps"
+          # 检查目录是否存在
+          if (Test-Path ${env:QT_ROOT_DIR}) {
+              Write-Host "✅ Qt 根目录存在"
+              Write-Host "一级目录内容:"
+              Get-ChildItem -Path ${env:QT_ROOT_DIR} -Name
           } else {
-            cmake .. -G Ninja `
-              -DCMAKE_BUILD_TYPE=Release `
-              -DCMAKE_PREFIX_PATH="/usr/local"
+              Write-Host "❌ Qt 根目录不存在"
+              exit 1
           }
+          if (Test-Path ${env:BOOST_ROOT}) {
+                        Write-Host "✅ Boost 根目录存在"
+                        Write-Host "一级目录内容:"
+                        Get-ChildItem -Path ${env:BOOST_ROOT} -Name
+          } else {
+              Write-Host "❌ Boost 根目录不存在"
+              exit 1
+          }
+          cmake -S . -B build -G "Ninja" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH="${env:BOOST_ROOT};${env:QT_ROOT_DIR};./deps"
 
-      # ---------- Build ----------
-      - name: Build Project
-        shell: pwsh
-        run: |
-          cd build
-          cmake --build . --config Release --parallel
+          cmake --build build --config Release --parallel
 
       # ---------- Check artifacts ----------
       - name: Check artifacts (Windows)
-        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           Write-Host "构建输出目录内容:"
           Get-ChildItem -Path "build" -Recurse -Include *.exe,*.dll | ForEach-Object { Write-Host $_.FullName }
-          # 设置 PATH
-          $env:PATH = "$qtPrefix\bin;$env:PATH"
-          Write-Host "Qt安装路径: $env:QT_ROOT_DIR"
-          Write-Host "PATH=$env:PATH"
-          # 编译
-          cmake --build build --config Release --parallel
           # 部署 Qt 依赖
           windeployqt "${{ env.release_file }}"
 
@@ -174,18 +131,9 @@ jobs:
           Compress-Archive -Path "${{ env.release_dir }}*" -DestinationPath "${{ env.release_zip }}" -Force
           Write-Host "✅ 打包完成: ${{ env.release_zip }}"
 
-      - name: Check artifacts (Ubuntu)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          echo "构建输出目录内容:"
-          tree -L 3 build
-          find build/Release/bin -type f -executable
-
         # 5️⃣ 上传构建产物到 Actions（调试查看）
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
-        if: runner.os == 'Windows'
         with:
           name: build-artifacts
           path: "${{ env.release_zip }}"
@@ -193,8 +141,67 @@ jobs:
       # 6️⃣ 上传构建产物到 GitHub Release 需要开启读写权限
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
-        if: github.ref_type == 'tag' &&  runner.os == 'Windows'
+        if: github.ref_type == 'tag' 
         with:
           files: "${{ env.release_zip  }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  ubuntu-build:
+    env:
+      release_exe: build/Release/bin/Lab2QRCode
+      release_dir: build/Release/bin/
+      release_zip: Lab2QRCode-linux.tar.gz
+
+    name: Ubuntu GCC Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---- Install Dependencies ----
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qtbase5-dev qt5-qmake \
+            libboost-all-dev \
+            cmake ninja-build build-essential \
+            libopencv-dev
+
+      # ---- Build ZXing (Linux) ----
+      - name: Build zxing-cpp
+        run: |
+          git clone https://github.com/zxing-cpp/zxing-cpp.git --depth 1
+          cmake -S zxing-cpp -B zxing-cpp/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF
+          sudo cmake --build zxing-cpp/build --parallel
+          sudo cmake --install zxing-cpp/build --prefix /usr/local
+
+      # ---- Configure and Build Project ----
+      - name: Configure and build project
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+
+          cmake --build build --parallel
+
+          tar -cvzf ${{ env.release_zip }} -C ${{ env.release_dir }} .
+
+      # ---- Upload Build Artifacts ----
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: ${{ env.release_dir }}
+
+      # ---- Publish Release (only when tag) ----
+      - name: Upload Release Asset
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.release_zip }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
