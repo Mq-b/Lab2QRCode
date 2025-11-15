@@ -10,11 +10,10 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/build/${CMAKE_BUILD_TYPE}/bin)
 include_directories(include)
 
 # set(CMAKE_PREFIX_PATH "D:/dagong/test/vcpkg/installed/x64-windows" ${CMAKE_PREFIX_PATH})
-# 是否启用静态链接 Qt
 #set(CMAKE_PREFIX_PATH  $ENV{QT5_15_STATIC} ${CMAKE_PREFIX_PATH})
 
 if(MSVC)
-    add_compile_options(/EHsc /utf-8)
+    add_compile_options(/EHsc /utf-8 /bigobj)
 endif()
 
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
@@ -22,8 +21,10 @@ find_package(Threads REQUIRED)
 find_package(ZXing REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS
-    ALL # headeronly无法指定单个库，只能指定ALL
+    headers
+    random
 )
+
 
 get_target_property(ZXING_INCLUDES ZXing::ZXing INTERFACE_INCLUDE_DIRECTORIES)
 
@@ -32,12 +33,13 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 add_executable(${PROJECT_NAME} WIN32 ${SOURCES} "logo.rc")
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${ZXING_INCLUDES}  ${Boost_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE ${ZXING_INCLUDES})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     Qt5::Core
     Qt5::Widgets
     ZXing::ZXing
     ${OpenCV_LIBS}
-    ${Boost_LIBRARIES}
+    Boost::headers
+    Boost::random
 )
