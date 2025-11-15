@@ -24,7 +24,7 @@ find_package(Boost REQUIRED COMPONENTS
     headers
     random
 )
-
+find_package(spdlog CONFIG REQUIRED)
 
 get_target_property(ZXING_INCLUDES ZXing::ZXing INTERFACE_INCLUDE_DIRECTORIES)
 
@@ -42,4 +42,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${OpenCV_LIBS}
     Boost::headers
     Boost::random
+    spdlog::spdlog
+)
+
+add_custom_command(
+    TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/setting"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/setting"
 )

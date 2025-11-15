@@ -81,10 +81,19 @@ jobs:
           '@ | Out-File -FilePath $opencvConfig -Encoding UTF8 
 
           # 构建 zxing-cpp
-          git clone https://github.com/zxing-cpp/zxing-cpp.git --depth 1
-          cmake -S zxing-cpp -B zxing-cpp/build -G Ninja -DCMAKE_BUILD_TYPE=Release 
-          cmake --build zxing-cpp/build --config Release
-          cmake --install zxing-cpp/build --prefix "${{ github.workspace }}/deps"
+          git clone --depth 1 https://github.com/zxing-cpp/zxing-cpp.git `
+            ../zxing-cpp --recurse -b v2.3.0
+            
+          cmake -S ../zxing-cpp -B ../zxing-cpp/build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build ../zxing-cpp/build --config Release
+          cmake --install ../zxing-cpp/build --prefix "${{ github.workspace }}/deps"
+          # Build spdlog
+          git clone --depth 1 https://github.com/gabime/spdlog `
+           ../spdlog --recurse -b v1.16.0
+          cmake -S ../spdlog -B ../spdlog/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSPDLOG_BUILD_EXAMPLE=OFF -DSPDLOG_BUILD_TESTS=OFF SPDLOG_BUILD_SHARED=OFF
+          cmake --build ../spdlog/build --config Release
+          cmake --install ../spdlog/build --prefix "${{ github.workspace }}/deps"
+
 
         # ---------- Configure ----------
       - name: Configure CMake And Build Project
@@ -136,7 +145,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
-          path: "${{ env.release_zip }}"
+          path: "${{ env.release_dir }}"
 
       # 6️⃣ 上传构建产物到 GitHub Release 需要开启读写权限
       - name: Upload Release Asset
@@ -168,7 +177,7 @@ jobs:
             qtbase5-dev qt5-qmake \
             libboost-all-dev \
             cmake ninja-build build-essential \
-            libopencv-dev
+            libopencv-dev libspdlog-dev
 
       # ---- Build ZXing (Linux) ----
       - name: Build zxing-cpp
