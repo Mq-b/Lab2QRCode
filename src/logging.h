@@ -1,55 +1,34 @@
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <QDir>
 #include <QCoreApplication>
-#include <QDebug>
+#include <filesystem>
+#include <spdlog/sinks/daily_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
 namespace Logging {
+
 /**
- * @brief 初始化 spdlog 日志系统
- *
- * 该函数会完成以下操作：
- * 1. 获取应用程序所在目录，并在其下创建 logs 子目录
- * 2. 配置日志输出到：
- *      - 彩色终端（stdout）
- *      - 日志文件 logs/app.log
- * 3. 设置默认 logger，使得 spdlog::info/debug/error 等全局可用
- * 4. 设置日志等级为 debug（可记录 debug 及以上级别）
- * 5. 设置 flush_on(info)，保证 info 及以上日志立即写入文件
- * 6. 捕获初始化异常并打印到 stderr
- *
- * @note 日志目录总是相对于应用程序可执行文件所在路径，不依赖工作目录
+ * @brief 初始化日志系统
+ * 
+ * 配置 spdlog，使用文件和控制台两个输出通道。
+ * 日志文件按天滚动保存，控制台输出带颜色。
  */
-inline void initSpdlog()
-{
-    // 获取应用所在目录，例如 .../build/app/Debug/
-    QString appDir = QCoreApplication::applicationDirPath();
-    QString logDir = appDir + "/logs";
-
-    // 创建 logs 目录
-    QDir().mkpath(logDir);
-
-    // 最终日志文件路径
-    QString logFile = logDir + "/app.log";
-
-    try
-    {
-        std::vector<spdlog::sink_ptr> sinks;
-        sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(
-            logFile.toStdString(), false));
-
-        auto logger = std::make_shared<spdlog::logger>("app", sinks.begin(), sinks.end());
-
-        spdlog::set_default_logger(logger);
-        spdlog::set_level(spdlog::level::debug);
-        spdlog::flush_on(spdlog::level::info);
+inline void setupLogging() {
+    if(std::filesystem::exists("Log")){
+        std::filesystem::create_directory("Log");
     }
-    catch (const spdlog::spdlog_ex& ex)
-    {
-        fprintf(stderr, "Log init failed: %s\n", ex.what());
-    }
+    auto file_sink = std::make_shared<spdlog::sinks::daily_file_sink_mt>("Log/daily.log", 0, 0);
+    file_sink->set_level(spdlog::level::debug);
+    file_sink->set_pattern("[%Y-%m-%d %H:%M:%S] [thread %t] [%oms] [%l] %v");
 
-    spdlog::info("application working at: ",QDir().currentPath().toStdString());
+    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    console_sink->set_level(spdlog::level::debug);
+    console_sink->set_pattern("%^[%Y-%m-%d %H:%M:%S] [thread %t] [%oms] [%l] %v%$");
+
+    auto logger = std::make_shared<spdlog::logger>("multi_sink", spdlog::sinks_init_list{ file_sink, console_sink });
+    spdlog::register_logger(logger);
+
+    spdlog::set_default_logger(logger);
+    spdlog::flush_on(spdlog::level::debug);
 }
 
-}
+} // namespace Logging
