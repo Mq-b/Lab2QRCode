@@ -20,7 +20,7 @@ find_package(Qt5 REQUIRED COMPONENTS Core Widgets)
 find_package(Threads REQUIRED)
 find_package(ZXing REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(Boost REQUIRED COMPONENTS
+find_package(Boost CONFIG REQUIRED COMPONENTS
     headers
     random
 )

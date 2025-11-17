@@ -50,7 +50,8 @@ jobs:
           boost_install_dir: ${{ github.workspace }}
           platform_version: 2022
           toolset: msvc
-
+          cache: true
+            
       - name: Install dependencies
         shell: pwsh
         run: |

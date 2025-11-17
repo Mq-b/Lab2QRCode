@@ -284,7 +284,7 @@ void BarcodeWidget::onDecodeToChemFileClicked()
     }
 
     try {
-        const cv::Mat img = loadImageFromFile(filePath);
+        cv::Mat img = cv::imread(filePath.toLocal8Bit().toStdString(), cv::IMREAD_COLOR);
         if (img.empty()) {
             spdlog::error("loadImageFromFile 无法加载图片文件: {}", filePath.toStdString());
             return;
@@ -316,9 +316,9 @@ void BarcodeWidget::onDecodeToChemFileClicked()
         // ✅ 显示部分内容到界面
         QString preview;
         if (decodedData.size() > 1024)
-            preview = QString::fromLatin1(reinterpret_cast<const char*>(decodedData.data()), 1024) + "\n... (内容已截断)";
+            preview = QString::fromUtf8(reinterpret_cast<const char*>(decodedData.data()), 1024) + "\n... (内容已截断)";
         else
-            preview = QString::fromLatin1(reinterpret_cast<const char*>(decodedData.data()), static_cast<int>(decodedData.size()));
+            preview = QString::fromUtf8(reinterpret_cast<const char*>(decodedData.data()), static_cast<int>(decodedData.size()));
 
         barcodeLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
         barcodeLabel->setWordWrap(false);
