@@ -15,11 +15,6 @@ $git_commit_time = git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S' 2>$
 # 获取构建的时间
 $build_time = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
 
-# 检查 Git 仓库状态
-if (-not $git_hash -or -not $git_tag -or -not $git_commit_time) {
-    Write-Error "Error: Not a valid Git repository or unable to retrieve Git information."
-    exit 1
-}
 
 # 生成 version.cpp 文件
 @"

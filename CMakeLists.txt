@@ -12,13 +12,16 @@ include_directories(include)
 set(CMAKE_PREFIX_PATH $ENV{VCPKG_LIB} ${CMAKE_PREFIX_PATH})
 #set(CMAKE_PREFIX_PATH  $ENV{QT5_15_STATIC} ${CMAKE_PREFIX_PATH})
 
-add_custom_target(
-    RunPowerShellScript ALL
+set(VERSION_CPP "${CMAKE_SOURCE_DIR}/src/version_info/version.cpp")
+
+add_custom_target(RunPowerShellScript ALL
     COMMAND ${CMAKE_COMMAND} -E echo "Running PowerShell script..."
-    COMMAND powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1
+    COMMAND pwsh -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/version_info
-    COMMENT "Executing PowerShell script to generate repository code information"
+    COMMENT "Generating version.cpp"
+    BYPRODUCTS ${VERSION_CPP}
 )
+
 
 message(STATUS "PowerShell command: powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1")
 
@@ -42,7 +45,14 @@ get_target_property(ZXING_INCLUDES ZXing::ZXing INTERFACE_INCLUDE_DIRECTORIES)
 message(STATUS "ZXing include path = ${ZXING_INCLUDES}")
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-add_executable(${PROJECT_NAME} WIN32 ${SOURCES} "logo.rc")
+add_executable(${PROJECT_NAME} 
+    WIN32 
+    ${SOURCES}
+    ${VERSION_CPP}
+    "logo.rc"
+)
+add_dependencies(${PROJECT_NAME} version_target)
+
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${ZXING_INCLUDES})
 

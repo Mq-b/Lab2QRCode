@@ -145,7 +145,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
+          name: Lab2QRCode-windows
           path: "${{ env.release_dir }}"
 
       # 6️⃣ 上传构建产物到 GitHub Release 需要开启读写权限
@@ -192,13 +192,16 @@ jobs:
 
       # ---- Configure and Build Project ----
       - name: Configure and build project
+        shell: pwsh
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release
+          # 配置 CMake
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 
+          # 构建项目
           cmake --build build --parallel
 
-          tar -cvzf ${{ env.release_zip }} -C ${{ env.release_dir }} .
+          # 打包 release
+          Compress-Archive -Path "${{ env.release_dir }}\*" -DestinationPath "${{ env.release_zip }}"
 
       # ---- Upload Build Artifacts ----
       - name: Upload build artifacts

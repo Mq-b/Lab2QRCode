@@ -42,7 +42,7 @@ BarcodeWidget::BarcodeWidget(QWidget* parent)
     setWindowTitle("Lab2QRCode");
     setMinimumSize(500, 600);
 
-    QMenuBar* menuBar = new QMenuBar(this);
+    QMenuBar* menuBar = new QMenuBar();
     QMenu* helpMenu = menuBar->addMenu("帮助");
 
     QFont menuFont("SimHei", 12);
@@ -59,6 +59,8 @@ BarcodeWidget::BarcodeWidget(QWidget* parent)
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(15);  // 调整控件之间的间距
     mainLayout->setContentsMargins(30, 20, 30, 20);
+
+    mainLayout->setMenuBar(menuBar);
 
     auto* fileLayout = new QHBoxLayout();
     filePathEdit = new QLineEdit(this);
