@@ -51,7 +51,7 @@ add_executable(${PROJECT_NAME}
     ${VERSION_CPP}
     "logo.rc"
 )
-add_dependencies(${PROJECT_NAME} version_target)
+add_dependencies(${PROJECT_NAME} RunPowerShellScript)
 
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${ZXING_INCLUDES})
