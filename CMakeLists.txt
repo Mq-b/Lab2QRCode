@@ -47,7 +47,6 @@ add_executable(${PROJECT_NAME}
     WIN32 
     ${SOURCES}
     ${VERSION_CPP}
-    "src/about_dialog.cpp"
     "logo.rc"
 )
 add_dependencies(${PROJECT_NAME} RunPowerShellScript)

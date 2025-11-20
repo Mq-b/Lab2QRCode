@@ -56,27 +56,24 @@ jobs:
         shell: pwsh
         run: |
           # 创建 deps 目录
-          $depsDir = "${{ github.workspace }}\deps"
+          $depsDir = ".\deps"
           New-Item -ItemType Directory -Path $depsDir -Force | Out-Null
           # 下载并配置 OpenCV
-            $opencvZip = "${{ github.workspace }}\deps\opencv.zip"
-            $opencvDir = "${{ github.workspace }}\deps\OpenCV"
-            Invoke-WebRequest "https://github.com/thommyho/Cpp-OpenCV-Windows-PreBuilts/releases/download/v4.12.0/MSVC142_64.zip" -OutFile $opencvZip
-            Expand-Archive $opencvZip -DestinationPath $opencvDir
-            Remove-Item $opencvZip
+          $opencvZip = ".\deps\opencv.zip"
+          $opencvDir = ".\deps\OpenCV"
+          Invoke-WebRequest "https://github.com/CrossroadW/prebuild_windows_msvc/releases/download/v1.0/opencv4120.zip" -OutFile $opencvZip
+          Expand-Archive $opencvZip -DestinationPath $opencvDir
+          Remove-Item $opencvZip
 
-            $opencvConfig = "$opencvDir/OpenCVConfig.cmake"
+          $opencvConfig = "$opencvDir/OpenCVConfig.cmake"
           @'
           # Auto-generated OpenCVConfig.cmake
-          set(OpenCV_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/Release/include")
-          set(OpenCV_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/Release/lib")
-          file(GLOB OpenCV_LIB_FILES "${OpenCV_LIB_DIR}/*.lib")
+          set(OpenCV_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/include")
+          set(OpenCV_LIB_FILE "${CMAKE_CURRENT_LIST_DIR}/opencv_world4120.lib")
           add_library(OpenCV::OpenCV STATIC IMPORTED)
-          list(GET OpenCV_LIB_FILES 0 first_lib)
           set_target_properties(OpenCV::OpenCV PROPERTIES
-              IMPORTED_LOCATION "${first_lib}"
+              IMPORTED_LOCATION "${OpenCV_LIB_FILE}"
               INTERFACE_INCLUDE_DIRECTORIES "${OpenCV_INCLUDE_DIRS}"
-              INTERFACE_LINK_LIBRARIES "${OpenCV_LIB_FILES}"
           )
           set(OpenCV_LIBS OpenCV::OpenCV)
           '@ | Out-File -FilePath $opencvConfig -Encoding UTF8 
@@ -133,6 +130,15 @@ jobs:
           Get-ChildItem -Path "build" -Recurse -Include *.exe,*.dll | ForEach-Object { Write-Host $_.FullName }
           # 部署 Qt 依赖
           windeployqt "${{ env.release_file }}"
+
+          # 🆕 手动复制 OpenCV DLL 到发布目录
+          $opencvDll = ".\deps\OpenCV\opencv_world4120.dll"
+          if (Test-Path $opencvDll) {
+              Copy-Item $opencvDll -Destination "${{ env.release_dir }}" -Force
+              Write-Host "✅ 已复制 OpenCV DLL 到发布目录"
+          } else {
+              Write-Warning "未找到 OpenCV DLL: $opencvDll"
+          }
 
           Write-Host "📦 压缩目录: ${{ env.release_dir }}"
           if (Test-Path "${{ env.release_zip }}") {
