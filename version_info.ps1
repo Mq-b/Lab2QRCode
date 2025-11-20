@@ -12,8 +12,11 @@ $git_branch = git branch --show-current
 # 获取当前仓库最新提交的时间
 $git_commit_time = git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S' 2>$null
 
-# 获取构建的时间
-$build_time = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+# 使用中国时区，获取构建的时间
+$build_time = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId(
+    [DateTime]::UtcNow, 
+    'China Standard Time'
+).ToString('yyyy-MM-dd HH:mm:ss')
 
 
 # 生成 version.cpp 文件
