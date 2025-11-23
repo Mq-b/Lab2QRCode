@@ -267,7 +267,7 @@ void BarcodeWidget::onGenerateClicked()
         const QImage& img = result.first;
 
         if (const QString& errorMsg = result.second; !errorMsg.isEmpty()) {
-            QMessageBox::critical(this, "错误", "不能打开文件.");
+            QMessageBox::critical(this, "错误", errorMsg);
             barcodeLabel->clear();
         }
 
