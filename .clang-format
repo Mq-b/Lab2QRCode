@@ -2,10 +2,7 @@
 Language: Cpp
 BasedOnStyle: LLVM
 AccessModifierOffset: -4
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
 AlignOperands: false
-AlignTrailingComments: false
 AlwaysBreakTemplateDeclarations: Yes
 BraceWrapping: 
   AfterCaseLabel: true
@@ -52,4 +49,21 @@ SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 TabWidth: 4
 AlignAfterOpenBracket: DontAlign
+
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: true   # 是否跨越空行进行对齐
+  AcrossComments: true     # 是否跨越注释行进行对齐
+  AlignCompound: true      # 是否也对齐 +=, -=, *= 等复合赋值
+  PadOperators: true       # 在运算符周围添加空格
+AlignTrailingComments:
+  Kind: Always        # 强制对齐
+  OverEmptyLines: 0   # 允许跨越多少个空行仍保持对齐组 (0表示空行打断对齐)
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AlignCompound: true
+  PadOperators: true
+  AcrossComments: true
+
+AlignArrayOfStructures: Left
 ...
