@@ -5,18 +5,17 @@
 #ifndef LAB2QRCODE_CONVERT_H
 #define LAB2QRCODE_CONVERT_H
 
-#include <QFile>
-#include <QFileDialog>
+#include <variant>
+#include <vector>
+
 #include <QImage>
-#include <QMessageBox>
+#include <QString>
+#include <QFileInfo>
+#include <QByteArray>
 #include <ZXing/BitMatrix.h>
 #include <ZXing/ImageView.h>
 #include <ZXing/MultiFormatWriter.h>
 #include <ZXing/ReadBarcode.h>
-#include <qfileinfo.h>
-
-#include <variant>
-#include <vector>
 
 namespace convert{
     struct result_data_entry {
@@ -70,14 +69,14 @@ namespace convert{
         }
     };
 
-	struct QRcode_config{
+	struct QRcode_create_config{
 		int target_width = 300;
 		int target_height = 300;
 		ZXing::BarcodeFormat format = ZXing::BarcodeFormat::QRCode;
 		int margin = 1;
 	};
 
-	[[nodiscard]] inline QImage byte_to_QRCode_qimage(const std::string& text, const QRcode_config qrcode_config){
+	[[nodiscard]] inline QImage byte_to_QRCode_qimage(const std::string& text, const QRcode_create_config qrcode_config){
 		ZXing::MultiFormatWriter writer(qrcode_config.format);
 		writer.setMargin(qrcode_config.margin);
 
@@ -137,13 +136,6 @@ namespace convert{
 	    return result.text();
 	}
 
-	// struct batch_dat2QRcode{
-	//     QFile directory
-	// };
-	//
-	// struct batch_QRcode2dat{
-	//
-	// };
 }
 
 #endif //LAB2QRCODE_CONVERT_H
