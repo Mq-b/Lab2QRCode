@@ -11,15 +11,13 @@ class QVBoxLayout;
 class QHBoxLayout;
 class QFrame;
 
-class AboutDialog : public QDialog
-{
+class AboutDialog : public QDialog {
     Q_OBJECT
 
 public:
     explicit AboutDialog(QWidget* parent = nullptr);
-    void setVersionInfo(const QString& tag, const QString& hash,
-        const QString& branch, const QString& commitTime,
-        const QString& buildTime);
+    void setVersionInfo(const QString& tag, const QString& hash, const QString& branch, const QString& commitTime,
+                        const QString& buildTime);
 
 private slots:
     void onGithubClicked();

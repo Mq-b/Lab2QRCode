@@ -9,6 +9,6 @@ namespace version {
     extern const std::string_view git_branch;
     extern const std::string_view git_commit_time;
     extern const std::string_view build_time;
-};
+}; // namespace version
 
 #endif // VERSION_H

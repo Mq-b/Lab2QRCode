@@ -1,10 +1,10 @@
 #pragma once
 
-#include <boost/mqtt5/mqtt_client.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <string>
+#include <boost/mqtt5/mqtt_client.hpp>
 #include <functional>
+#include <string>
 #include <thread>
 
 struct MqttConfig {
@@ -20,7 +20,8 @@ public:
 
     static MqttConfig load_config(const std::string& filename);
 
-    MqttSubscriber(const std::string& host, uint16_t port, const std::string& client_id, const MessageCallback& callback);
+    MqttSubscriber(const std::string& host, uint16_t port, const std::string& client_id,
+                   const MessageCallback& callback);
     void subscribe(const std::string& topic);
     void stop();
     ~MqttSubscriber();
