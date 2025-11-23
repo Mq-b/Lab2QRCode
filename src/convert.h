@@ -21,7 +21,6 @@
 namespace convert{
     struct result_data_entry {
         using variant_t = std::variant<std::monostate, QImage, QByteArray, std::string>;
-        //TODO source file name?
 
         //Empty, QRCode, decoded text, error
         QString source_file_name;
