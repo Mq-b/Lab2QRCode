@@ -67,134 +67,6 @@ QStringList getTargetPath(const QFileInfo& fileInfo, const QStringList& filters)
     return filePaths;
 }
 
-QImage BarcodeWidget::MatToQImage(const cv::Mat& mat) const {
-    if (mat.type() == CV_8UC1)
-        return QImage(mat.data, mat.cols, mat.rows, static_cast<int>(mat.step), QImage::Format_Grayscale8).copy();
-    else if (mat.type() == CV_8UC3) {
-        cv::Mat rgb;
-        cvtColor(mat, rgb, cv::COLOR_BGR2RGB);
-        return QImage(rgb.data, rgb.cols, rgb.rows, static_cast<int>(rgb.step), QImage::Format_RGB888).copy();
-    }
-    return {};
-}
-
-void BarcodeWidget::renderResults() const {
-    QWidget*     container  = new QWidget();
-    QGridLayout* gridLayout = new QGridLayout(container);
-
-    gridLayout->setHorizontalSpacing(20);
-    gridLayout->setVerticalSpacing(40);
-    gridLayout->setContentsMargins(20, 20, 20, 20);
-
-    int           count      = 0;
-    // TODO 依照分辨率决定？
-    constexpr int maxColumns = 4; // 每行最多4个
-
-    for (const auto& entry : lastResults) {
-        int row                 = count / maxColumns;
-        int col                 = count % maxColumns;
-
-        QWidget*     cellWidget = new QWidget();
-        QVBoxLayout* cellLayout = new QVBoxLayout(cellWidget);
-        cellLayout->setContentsMargins(0, 0, 0, 0);
-        cellLayout->setSpacing(5);
-
-        QWidget* contentWidget = nullptr;
-
-        std::visit(overload_def_noop{std::in_place_type<void>,
-                       [&](const QImage& img) {
-                           QLabel* imgLabel = new QLabel();
-                           imgLabel->setPixmap(QPixmap::fromImage(img).scaled(
-                               200, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation)); // 缩略图大小
-                           imgLabel->setAlignment(Qt::AlignCenter);                       // 图片保持居中显示
-                           imgLabel->setStyleSheet("border: 1px solid #ddd; background: white;");
-                           imgLabel->setToolTip(QString("Size: %1x%2").arg(img.width()).arg(img.height()));
-                           contentWidget = imgLabel;
-                       },
-                       [&](const QByteArray& data) {
-                           QLabel* textLabel   = new QLabel();
-                           QString textDisplay = QString::fromUtf8(data);
-                           if (textDisplay.length() > 200) {
-                               textDisplay = textDisplay.left(200) + "...";
-                           }
-                           textLabel->setText(textDisplay);
-                           textLabel->setWordWrap(true);
-
-                           textLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-
-                           textLabel->setStyleSheet(
-                               "border: 1px solid #ddd; background: white; padding: 5px; font-family: Consolas;");
-                           textLabel->setFixedSize(200, 200);
-                           contentWidget = textLabel;
-                       },
-                       [&](const std::string& str) {
-                           QLabel* errLabel = new QLabel(QString::fromStdString(str));
-                           errLabel->setStyleSheet(
-                               "color: red; border: 1px solid red; background: #fff0f0; padding: 5px;");
-                           errLabel->setWordWrap(true);
-
-                           errLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-
-                           errLabel->setFixedSize(200, 200);
-                           contentWidget = errLabel;
-                       }},
-            entry.data);
-
-        if (contentWidget) {
-            QString fileNameStr = QFileInfo(entry.source_file_name).fileName();
-            if (fileNameStr.isEmpty())
-                fileNameStr = "Unknown";
-
-            QLabel* nameLabel = new QLabel(fileNameStr);
-            nameLabel->setAlignment(Qt::AlignCenter);
-            nameLabel->setStyleSheet("font-size: 10pt; color: #333; font-weight: bold;");
-            nameLabel->setFixedWidth(200);
-            nameLabel->setToolTip(entry.source_file_name);
-
-
-            QFontMetrics metrics(nameLabel->font());
-            QString      elidedText = metrics.elidedText(fileNameStr, Qt::ElideMiddle, 200);
-            nameLabel->setText(elidedText);
-
-            cellLayout->addWidget(nameLabel);
-
-            cellLayout->addWidget(contentWidget);
-
-            gridLayout->addWidget(cellWidget, row, col, Qt::AlignTop);
-        }
-        count++;
-    }
-
-    if (lastResults.empty()) {
-        QLabel* emptyLabel = new QLabel("N/A");
-        emptyLabel->setAlignment(Qt::AlignCenter);
-        gridLayout->addWidget(emptyLabel, 0, 0);
-    }
-
-    scrollArea->setWidget(container);
-}
-
-void BarcodeWidget::onBatchFinish(QFutureWatcher<convert::result_data_entry>& watcher) {
-    setCursor(Qt::ArrowCursor);
-    generateButton->setEnabled(true);
-    progressBar->setVisible(false);
-
-    QList<convert::result_data_entry> results = watcher.future().results();
-
-    lastResults.clear();
-    lastResults.reserve(results.size());
-    for (auto& item : results) {
-        lastResults.push_back(std::move(item));
-    }
-
-    if (!lastResults.empty()) {
-        saveButton->setEnabled(true);
-        renderResults(); // 批量渲染结果
-    }
-
-    watcher.deleteLater();
-}
-
 BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     setWindowTitle("Lab2QRCode");
     setMinimumSize(500, 600);
@@ -385,7 +257,7 @@ void BarcodeWidget::updateButtonStates(const QString& filePath) const {
         generateButton->setText("批量生成");
         decodeToChemFile->setText("批量解码");
 
-        generateButton->setToolTip("将文件夹内所有文件转换为二维码图片");
+        generateButton->setToolTip("将文件夹内所有文件转换为条码图片");
         decodeToChemFile->setToolTip("将文件夹内所有PNG图片解码为文件");
 
         enableBatchCheckBox->setCheckState(Qt::CheckState::Checked);
@@ -401,14 +273,14 @@ void BarcodeWidget::updateButtonStates(const QString& filePath) const {
             generateButton->setEnabled(false);
             decodeToChemFile->setEnabled(true);
             saveButton->setEnabled(false);
-            generateButton->setToolTip("请选择任意文件来生成QR码");
-            decodeToChemFile->setToolTip("可以解码PNG图片中的QR码");
+            generateButton->setToolTip("请选择任意文件来生成条码");
+            decodeToChemFile->setToolTip("可以解码PNG图片中的条码");
         } else {
             generateButton->setEnabled(true);
             decodeToChemFile->setEnabled(false);
             saveButton->setEnabled(false);
-            generateButton->setToolTip("可以从任意文件生成QR码");
-            decodeToChemFile->setToolTip("请选择PNG图片来解码QR码");
+            generateButton->setToolTip("可以从任意文件生成条码");
+            decodeToChemFile->setToolTip("请选择PNG图片来解码条码");
         }
 
         enableBatchCheckBox->setCheckState(Qt::CheckState::Unchecked);
@@ -439,7 +311,7 @@ void BarcodeWidget::onGenerateClicked() {
     }
     QStringList filters;
     filters << "*.txt" << "*.json" << "*.rfa";
-    QStringList filePaths = getTargetPath(fileInfo, filters);
+    const QStringList filePaths = getTargetPath(fileInfo, filters);
 
     if (filePaths.empty()) {
         QMessageBox::warning(this, "警告", "无可处理文件");
@@ -461,8 +333,9 @@ void BarcodeWidget::onGenerateClicked() {
 
     struct worker {
         using result_type = convert::result_data_entry;
-        int                  reqWidth, reqHeight;
-        bool                 useBase64;
+        int reqWidth;
+        int reqHeight;
+        bool useBase64;
         ZXing::BarcodeFormat format;
 
         convert::result_data_entry operator()(const QString& filePath) const {
@@ -530,7 +403,7 @@ void BarcodeWidget::onDecodeToChemFileClicked() {
     }
     QStringList filters;
     filters << "*.png";
-    QStringList filePaths = getTargetPath(fileInfo, filters);
+    const QStringList filePaths = getTargetPath(fileInfo, filters);
     if (filePaths.empty()) {
         QMessageBox::warning(this, "警告", "无可处理文件");
         return;
@@ -544,11 +417,10 @@ void BarcodeWidget::onDecodeToChemFileClicked() {
     saveButton->setEnabled(false);
     this->setCursor(Qt::WaitCursor);
 
-
     struct worker {
         using result_type = convert::result_data_entry;
 
-        bool                       useBase64;
+        bool useBase64;
         convert::result_data_entry operator()(QString path) const {
             try {
                 const auto bytes = path.toLocal8Bit().toStdString();
@@ -557,7 +429,7 @@ void BarcodeWidget::onDecodeToChemFileClicked() {
                     spdlog::error("loadImageFromFile 无法加载图片文件: {}", path.toStdString());
                     return {std::move(path), QString{"无法加载图片文件: %1"}.arg(path).toStdString()};
                 case convert::result_i2t::empty_img:
-                    return {std::move(path), std::string{"无法识别QR码或QR码格式不正确"}};
+                    return {std::move(path), std::string{"无法识别条码或条码格式不正确"}};
                 default:
                     std::vector<std::uint8_t> decodedData;
                     if (useBase64) {
@@ -580,7 +452,7 @@ void BarcodeWidget::onDecodeToChemFileClicked() {
         &QProgressBar::setValue);
 
     connect(
-        watcher, &QFutureWatcher<convert::result_data_entry>::finished, [this, watcher]() { onBatchFinish(*watcher); });
+        watcher, &QFutureWatcher<convert::result_data_entry>::finished, [this, watcher] { onBatchFinish(*watcher); });
 
     watcher->setFuture(QtConcurrent::mapped(filePaths, worker{base64CheckBox->isChecked()}));
 }
@@ -635,13 +507,13 @@ void BarcodeWidget::onSaveClicked() {
         if (dir.isEmpty())
             return;
 
-        QDir outputDir(dir);
+        const QDir outputDir(dir);
         for (const auto& entry : lastResults) {
             if (!entry) {
                 continue;
             }
 
-            QString fileName = outputDir.filePath(entry.get_default_target_name());
+            const QString fileName = outputDir.filePath(entry.get_default_target_name());
             tasks.append({entry, std::move(fileName)});
         }
     }
@@ -703,9 +575,9 @@ void BarcodeWidget::onSaveClicked() {
         saveButton->setEnabled(true);
         // 保存按钮总是可以再次点击
 
-        auto list                = watcher->future().results();
+        auto list = watcher->future().results();
 
-        int         successCount = 0;
+        int successCount = 0;
         QStringList failedInfos;
         QStringList successInfos;
 
@@ -764,6 +636,150 @@ void BarcodeWidget::onSaveClicked() {
     });
 
     watcher->setFuture(QtConcurrent::mapped(tasks, worker{}));
+}
+
+void BarcodeWidget::showAbout() const {
+    const QString tag = version::git_tag.data();
+    const QString hash = version::git_hash.data();
+    const QString branch = version::git_branch.data();
+    const QString commitTime = version::git_commit_time.data();
+    const QString buildTime = version::build_time.data();
+
+    AboutDialog* aboutDialog = new AboutDialog();
+    aboutDialog->setVersionInfo(tag, hash, branch, commitTime, buildTime);
+    aboutDialog->exec();
+    aboutDialog->deleteLater();
+}
+
+QImage BarcodeWidget::MatToQImage(const cv::Mat& mat) const {
+    if (mat.type() == CV_8UC1)
+        return QImage(mat.data, mat.cols, mat.rows, static_cast<int>(mat.step), QImage::Format_Grayscale8).copy();
+    else if (mat.type() == CV_8UC3) {
+        cv::Mat rgb;
+        cvtColor(mat, rgb, cv::COLOR_BGR2RGB);
+        return QImage(rgb.data, rgb.cols, rgb.rows, static_cast<int>(rgb.step), QImage::Format_RGB888).copy();
+    }
+    return {};
+}
+
+void BarcodeWidget::renderResults() const {
+    QWidget* container = new QWidget();
+    QGridLayout* gridLayout = new QGridLayout(container);
+
+    gridLayout->setHorizontalSpacing(20);
+    gridLayout->setVerticalSpacing(40);
+    gridLayout->setContentsMargins(20, 20, 20, 20);
+
+    int           count = 0;
+    // TODO 依照分辨率决定？
+    constexpr int maxColumns = 4; // 每行最多4个
+
+    for (const auto& entry : lastResults) {
+        int row = count / maxColumns;
+        int col = count % maxColumns;
+
+        QWidget* cellWidget = new QWidget();
+        QVBoxLayout* cellLayout = new QVBoxLayout(cellWidget);
+        cellLayout->setContentsMargins(0, 0, 0, 0);
+        cellLayout->setSpacing(5);
+
+        QWidget* contentWidget = nullptr;
+
+        std::visit(overload_def_noop{ std::in_place_type<void>,
+            // 图片类型，显示缩略图
+           [&](const QImage& img) {
+               QLabel* imgLabel = new QLabel();
+               imgLabel->setPixmap(QPixmap::fromImage(img).scaled(
+                   200, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation)); // 缩略图大小
+               imgLabel->setAlignment(Qt::AlignCenter);                       // 图片保持居中显示
+               imgLabel->setStyleSheet("border: 1px solid #ddd; background: white;");
+               imgLabel->setToolTip(QString("Size: %1x%2").arg(img.width()).arg(img.height()));
+               contentWidget = imgLabel;
+           },
+            // 文本类型，显示前200字符
+           [&](const QByteArray& data) {
+               QLabel* textLabel = new QLabel();
+               QString textDisplay = QString::fromUtf8(data);
+               if (textDisplay.length() > 200) {
+                   textDisplay = textDisplay.left(200) + "...";
+               }
+               textLabel->setText(textDisplay);
+               textLabel->setWordWrap(true);
+
+               textLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+               textLabel->setStyleSheet(
+                   "border: 1px solid #ddd; background: white; padding: 5px; font-family: Consolas;");
+               textLabel->setFixedSize(200, 200);
+               contentWidget = textLabel;
+           },
+            // 错误信息，显示解码或生成的错误内容
+           [&](const std::string& str) {
+               QLabel* errLabel = new QLabel(QString::fromStdString(str));
+               errLabel->setStyleSheet(
+                   "color: red; border: 1px solid red; background: #fff0f0; padding: 5px;");
+               errLabel->setWordWrap(true);
+
+               errLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
+               errLabel->setFixedSize(200, 200);
+               contentWidget = errLabel;
+           } },
+            entry.data);
+
+        if (contentWidget) {
+            QString fileNameStr = QFileInfo(entry.source_file_name).fileName();
+            if (fileNameStr.isEmpty())
+                fileNameStr = "Unknown";
+
+            QLabel* nameLabel = new QLabel(fileNameStr);
+            nameLabel->setAlignment(Qt::AlignCenter);
+            nameLabel->setStyleSheet("font-size: 10pt; color: #333; font-weight: bold;");
+            nameLabel->setFixedWidth(200);
+            nameLabel->setToolTip(entry.source_file_name);
+
+
+            QFontMetrics metrics(nameLabel->font());
+            QString      elidedText = metrics.elidedText(fileNameStr, Qt::ElideMiddle, 200);
+            nameLabel->setText(elidedText);
+
+            cellLayout->addWidget(nameLabel);
+
+            cellLayout->addWidget(contentWidget);
+
+            gridLayout->addWidget(cellWidget, row, col, Qt::AlignTop);
+        }
+        count++;
+    }
+
+    if (lastResults.empty()) {
+        QLabel* emptyLabel = new QLabel("N/A");
+        emptyLabel->setAlignment(Qt::AlignCenter);
+        gridLayout->addWidget(emptyLabel, 0, 0);
+    }
+
+    scrollArea->setWidget(container);
+}
+
+void BarcodeWidget::onBatchFinish(QFutureWatcher<convert::result_data_entry>& watcher) {
+    setCursor(Qt::ArrowCursor);
+    generateButton->setEnabled(true);
+    progressBar->setVisible(false);
+
+    QList<convert::result_data_entry> results = watcher.future().results();
+
+    lastResults.clear();
+    lastResults.reserve(results.size());
+    for (auto& item : results) {
+        lastResults.push_back(std::move(item));
+    }
+
+    if (!lastResults.empty()) {
+        saveButton->setEnabled(true);
+        renderResults(); // 批量渲染结果
+    }
+
+    watcher.deleteLater();
 }
 
 QString BarcodeWidget::barcodeFormatToString(ZXing::BarcodeFormat format) {
@@ -826,37 +842,4 @@ ZXing::BarcodeFormat BarcodeWidget::stringToBarcodeFormat(const QString& formatS
         return it.value();
 
     return ZXing::BarcodeFormat::None; // 未匹配时返回None
-}
-
-cv::Mat BarcodeWidget::loadImageFromFile(const QString& filePath) {
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        QMessageBox::critical(nullptr, "错误", "无法打开文件");
-        return {};
-    }
-
-    QByteArray fileData = file.readAll();
-    file.close();
-
-    cv::Mat img = cv::imdecode(cv::Mat(1, fileData.size(), CV_8UC1, fileData.data()), cv::IMREAD_COLOR);
-
-    if (img.empty()) {
-        QMessageBox::critical(nullptr, "cv::imdecode 错误", "无法解码图片文件。");
-        return cv::Mat();
-    }
-
-    return img;
-}
-
-void BarcodeWidget::showAbout() const {
-    const QString tag        = version::git_tag.data();
-    const QString hash       = version::git_hash.data();
-    const QString branch     = version::git_branch.data();
-    const QString commitTime = version::git_commit_time.data();
-    const QString buildTime  = version::build_time.data();
-
-    AboutDialog* aboutDialog = new AboutDialog();
-    aboutDialog->setVersionInfo(tag, hash, branch, commitTime, buildTime);
-    aboutDialog->exec();
-    aboutDialog->deleteLater();
 }

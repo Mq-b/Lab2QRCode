@@ -22,9 +22,9 @@ class QProgressBar;
 
 /**
  * @class BarcodeWidget
- * @brief 该类用于实现 QRCode 二维码图片生成和解析功能的窗口。
+ * @brief 该类用于实现 条码图片生成和解析功能的窗口。
  *
- * BarcodeWidget 提供了一个 GUI 界面，支持用户选择文件、生成二维码、解码二维码内容以及保存生成的二维码图像。
+ * BarcodeWidget 提供了一个 GUI 界面，支持用户选择文件、生成条码、解码条码内容以及保存生成的条码图像。
  */
 class BarcodeWidget : public QWidget {
     Q_OBJECT
@@ -62,6 +62,14 @@ private:
     };
 
 signals:
+    /**
+     * @brief MQTT 消息接收信号
+     * @param topic 接收到消息的主题(Topic)路径
+     * @param payload 消息的有效载荷内容，通常为JSON格式或字符串数据
+     *
+     * @details
+     * 当客户端订阅的 MQTT 主题有消息到达时，会触发此信号。
+     */
     void mqttMessageReceived(const QString& topic, const QString& payload);
 
 private slots:
@@ -73,22 +81,22 @@ private slots:
     void updateButtonStates(const QString& filePath) const;
 
     /**
-     * @brief 打开文件浏览器并选择一个文件，在文本框显示选择的文件路径。
+     * @brief 打开文件浏览器并选择一个文件、文件夹，在文本框显示选择的路径。
      */
     void onBrowseFile() const;
 
     /**
-     * @brief 根据调用 onBrowseFile 选择的文件生成二维码并显示。
+     * @brief 成条码并显示。
      */
     void onGenerateClicked();
 
     /**
-     * @brief 解码二维码。
+     * @brief 解码条码并显示。
      */
     void onDecodeToChemFileClicked();
 
     /**
-     * @brief 保存当前显示的二维码图像为文件。
+     * @brief 保存当前显示的条码图像为文件。
      */
     void onSaveClicked();
 
@@ -96,6 +104,22 @@ private slots:
      * @brief 显示关于软件的信息对话框。
      */
     void showAbout() const;
+
+    /**
+     * @brief 将 OpenCV 中的 Mat 对象转换为 QImage 格式。
+     */
+    QImage MatToQImage(const cv::Mat& mat) const;
+
+    /**
+    * @brief 渲染并显示结果
+    */
+    void renderResults() const;
+
+    /**
+    * @brief 批处理完成回调函数
+    * @param watcher 异步任务监视器
+    */
+    void onBatchFinish(QFutureWatcher<convert::result_data_entry>& watcher);
 
     /**
      * @brief 将条码格式枚举转换为字符串表示。
@@ -113,18 +137,12 @@ private slots:
      */
     static ZXing::BarcodeFormat stringToBarcodeFormat(const QString& formatStr);
 
-    static cv::Mat loadImageFromFile(const QString& filePath);
-
 private:
-    /**
-     * @brief 将 OpenCV 中的 Mat 对象转换为 QImage 格式。
-     */
-    QImage MatToQImage(const cv::Mat& mat) const;
 
     QLineEdit*                              filePathEdit;        /**< 文件路径输入框，用于显示选择的文件路径 */
-    QPushButton*                            generateButton;      /**< 生成二维码按钮 */
+    QPushButton*                            generateButton;      /**< 生成条码按钮 */
     QPushButton*                            decodeToChemFile;    /**< 解码并保存为化验文件按钮 */
-    QPushButton*                            saveButton;          /**< 保存二维码图片按钮 */
+    QPushButton*                            saveButton;          /**< 保存条码图片按钮 */
     QProgressBar*                           progressBar;         /**< 异步动作进度条 */
     std::vector<convert::result_data_entry> lastResults;         /**< 上次解码产生的结果 */
     QScrollArea*                            scrollArea;          /**< 滚动区域 */
@@ -136,15 +154,4 @@ private:
     QLineEdit*                      heightInput;                                         /**< 图片高度输入框  */
     QFileDialog*                    fileDialog;                                          /**< 文件选择弹窗    */
     std::unique_ptr<MqttSubscriber> subscriber_;                                         /**< MQTT 订阅者实例  */
-
-    /**
-    * @brief 渲染并显示解码结果
-    */
-    void renderResults() const;
-
-    /**
-    * @brief 批处理完成回调函数
-    * @param watcher 异步任务监视器
-    */
-    void onBatchFinish(QFutureWatcher<convert::result_data_entry>& watcher);
 };
