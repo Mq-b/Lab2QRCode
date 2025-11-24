@@ -31,7 +31,11 @@ MqttSubscriber::MqttSubscriber(const std::string& host, uint16_t port, const std
 void MqttSubscriber::subscribe(const std::string& topic) {
     topic_ = topic;
 
-    client_.brokers(host_, port_).credentials(client_id_).async_run(boost::asio::detached);
+    client_.brokers(host_, port_).credentials(client_id_)
+        .connect_property(boost::mqtt5::prop::session_expiry_interval, 60 * 60) // 1 hour
+        .connect_property(boost::mqtt5::prop::maximum_packet_size, 1024 * 1024)  // 1 MB
+        .async_run(boost::asio::detached);
+;
 
     const boost::mqtt5::subscribe_topic sub_topic(topic);
 
