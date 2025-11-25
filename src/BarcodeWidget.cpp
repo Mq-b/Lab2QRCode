@@ -782,7 +782,7 @@ void BarcodeWidget::renderResults() const {
         QVBoxLayout* vLayout = new QVBoxLayout(container);
         QLabel* infoLabel = new QLabel("当前模式：直接文本生成\n请输入内容并点击生成");
         infoLabel->setAlignment(Qt::AlignCenter);
-        infoLabel->setStyleSheet("font-size: 16px; color: #555;");
+        infoLabel->setStyleSheet("font-size: 18px; color: #aaa;");
         vLayout->addWidget(infoLabel);
         scrollArea->setWidget(container);
         return;
@@ -878,12 +878,12 @@ void BarcodeWidget::renderResults() const {
             QVBoxLayout* vLayout = new QVBoxLayout(container);
             QLabel* emptyLabel = new QLabel("请选择文件\n或者键入内容");
             emptyLabel->setAlignment(Qt::AlignCenter);
-            emptyLabel->setStyleSheet("font-size: 20px; color: #aaa;");
+            emptyLabel->setStyleSheet("font-size: 18px; color: #aaa;");
             vLayout->addWidget(emptyLabel);
         }
     } else if (lastResults.size() == 1) {
         // --- 单个结果展示逻辑 (保持原样) ---
-        const auto& entry = lastResults.front();
+       const auto& entry = lastResults.front();
         QVBoxLayout* singleLayout = new QVBoxLayout(container);
         singleLayout->setContentsMargins(10, 10, 10, 10);
         singleLayout->setSpacing(5);
@@ -898,7 +898,10 @@ void BarcodeWidget::renderResults() const {
                     imgLabel->setAlignment(Qt::AlignCenter);
                     imgLabel->setStyleSheet("border: 1px solid #ddd; background: white;");
                     imgLabel->setToolTip(QString("Size: %1x%2").arg(img.width()).arg(img.height()));
-                    imgLabel->setMinimumSize(1, 1);
+
+                    // [修改] 将最小尺寸设置为图片尺寸，确保大图能撑开 ScrollArea 出现滚动条
+                    imgLabel->setMinimumSize(img.size());
+
                     contentWidget = imgLabel;
                 },
                 [&](const QByteArray& data) {
