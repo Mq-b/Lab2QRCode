@@ -3,6 +3,7 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/mqtt5/mqtt_client.hpp>
+
 #include <functional>
 #include <string>
 #include <thread>
@@ -18,7 +19,9 @@ public:
     using client_type = boost::mqtt5::mqtt_client<boost::asio::ip::tcp::socket>;
     using MessageCallback = std::function<void(const std::string& topic, const std::string& payload)>;
 
-    static MqttConfig load_config(const std::string& filename);
+    static MqttConfig loadMqttConfig(const std::string& filename);
+
+    static std::string generate_client_id(const std::string& app_name = "Lab2QRCode");
 
     MqttSubscriber(const std::string& host, uint16_t port, const std::string& client_id,
                    const MessageCallback& callback);

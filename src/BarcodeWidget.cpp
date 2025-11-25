@@ -73,17 +73,20 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
 
     QMenuBar* menuBar  = new QMenuBar();
     QMenu*    helpMenu = menuBar->addMenu("帮助");
+    QMenu*    toolsMenu = menuBar->addMenu("工具");
 
     QFont menuFont("SimHei", 12);
     menuBar->setFont(menuFont);
 
     QAction* aboutAction = new QAction("关于软件", this);
+    QAction* debugMqttAction = new QAction("MQTT实时消息监控窗口", this);
     aboutAction->setFont(menuFont);
     helpMenu->addAction(aboutAction);
+    toolsMenu->addAction(debugMqttAction);
 
     // 连接菜单项的点击信号
     connect(aboutAction, &QAction::triggered, this, &BarcodeWidget::showAbout);
-
+    connect(debugMqttAction, &QAction::triggered, this, &BarcodeWidget::showMqttDebugMonitor);
 
     auto* mainLayout = new QVBoxLayout(this);
     mainLayout->setSpacing(15); // 调整控件之间的间距
@@ -201,13 +204,15 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     fileDialog = new QFileDialog(this, "Select File", "", "Supported Files (*.rfa *.txt *.png);;All Files (*)");
     fileDialog->setModal(false);
 
-    MqttConfig config = MqttSubscriber::load_config("./setting/config.json");
+    MqttConfig config = MqttSubscriber::loadMqttConfig("./setting/config.json");
 
     subscriber_       = std::make_unique<MqttSubscriber>(
         config.host, config.port, config.client_id, [this](const std::string& topic, const std::string& payload) {
-            emit mqttMessageReceived(QString::fromStdString(topic), QString::fromStdString(payload));
+            emit mqttMessageReceived(QString::fromStdString(topic), QByteArray::fromStdString(payload));
         });
     subscriber_->subscribe("test/topic");
+
+    messageWidget = std::make_unique<MQTTMessageWidget>();
 
     connect(browseButton, &QPushButton::clicked, this, &BarcodeWidget::onBrowseFile);
     connect(generateButton, &QPushButton::clicked, this, &BarcodeWidget::onGenerateClicked);
@@ -219,8 +224,9 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
         // 设置当前选择的条码格式
         currentBarcodeFormat = stringToBarcodeFormat(barcodeFormats[index]);
     });
-    connect(this, &BarcodeWidget::mqttMessageReceived, this, [this](const QString& topic, const QString& payload) {
-        QMessageBox::information(this, "订阅消息", QString("主题: %1\n内容: %2").arg(topic, payload));
+    connect(this, &BarcodeWidget::mqttMessageReceived, this, [this](const QString& topic, const QByteArray& payload) {
+        //QMessageBox::information(this, "订阅消息", QString("主题: %1\n内容: %2").arg(topic, payload));
+        messageWidget->addMessage(topic,payload);
     });
     connect(fileDialog, &QFileDialog::fileSelected, this, [this](const QString& fileName) {
         if (!fileName.isEmpty()) {
@@ -649,6 +655,10 @@ void BarcodeWidget::showAbout() const {
     aboutDialog->setVersionInfo(tag, hash, branch, commitTime, buildTime);
     aboutDialog->exec();
     aboutDialog->deleteLater();
+}
+
+void BarcodeWidget::showMqttDebugMonitor() const {
+    messageWidget->show();
 }
 
 QImage BarcodeWidget::MatToQImage(const cv::Mat& mat) const {

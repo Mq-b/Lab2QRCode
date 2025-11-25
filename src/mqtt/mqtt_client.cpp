@@ -2,25 +2,50 @@
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 using json = nlohmann::json;
 
-MqttConfig MqttSubscriber::load_config(const std::string& filename) {
+MqttConfig MqttSubscriber::loadMqttConfig(const std::string& filename) {
     std::ifstream file(filename);
-    if (!file.is_open()) {
-        spdlog::error("Unable to open config file [{}]!", filename);
-        throw std::runtime_error(std::format("Unable to open config file [{}]!", filename));
+    json config_json;
+
+    if (file.is_open()) {
+        file >> config_json;
     }
 
-    json config_json;
-    file >> config_json;
+    spdlog::info("MQTT 配置文件: Host={}, Port={}, Client ID={}", config_json["mqtt"]["host"].dump(), config_json["mqtt"]["port"].dump(), config_json["mqtt"]["client_id"].dump());
 
     MqttConfig config;
     config.host = config_json["mqtt"]["host"];
     config.port = config_json["mqtt"]["port"];
-    config.client_id = config_json["mqtt"]["client_id"];
+
+    // 如果 client_id 不存在或为空，则生成并保存
+    if (!config_json.contains("mqtt") ||
+        !config_json["mqtt"].contains("client_id") ||
+        config_json["mqtt"]["client_id"].get<std::string>().empty()) {
+        
+        config.client_id = generate_client_id();
+        spdlog::info("client_id 不存在，生成ID: {}", config.client_id);
+        // 更新配置
+        config_json["mqtt"]["client_id"] = config.client_id;
+        std::ofstream out_file(filename);
+        if (out_file.is_open()) {
+            out_file << config_json.dump(4);
+        }
+    } else {
+        config.client_id = config_json["mqtt"]["client_id"];
+    }
 
     return config;
+}
+
+std::string MqttSubscriber::generate_client_id(const std::string& app_name) {
+    static boost::uuids::random_generator generator;
+    const boost::uuids::uuid uuid = generator();
+    return app_name + "_" + boost::uuids::to_string(uuid);
 }
 
 MqttSubscriber::MqttSubscriber(const std::string& host, uint16_t port, const std::string& client_id,
@@ -31,7 +56,11 @@ MqttSubscriber::MqttSubscriber(const std::string& host, uint16_t port, const std
 void MqttSubscriber::subscribe(const std::string& topic) {
     topic_ = topic;
 
-    client_.brokers(host_, port_).credentials(client_id_).async_run(boost::asio::detached);
+    client_.brokers(host_, port_).credentials(client_id_)
+        .connect_property(boost::mqtt5::prop::session_expiry_interval, 60 * 60) // 1 hour
+        .connect_property(boost::mqtt5::prop::maximum_packet_size, 1024 * 1024)  // 1 MB
+        .async_run(boost::asio::detached);
+;
 
     const boost::mqtt5::subscribe_topic sub_topic(topic);
 
@@ -52,7 +81,7 @@ void MqttSubscriber::subscribe(const std::string& topic) {
     start_receive();
 
     // 在新线程中运行 io_context
-    runner_thread_ = std::thread([this]() { ioc_->run(); });
+    runner_thread_ = std::thread([this] { ioc_->run(); });
 }
 
 void MqttSubscriber::stop() {
@@ -71,7 +100,6 @@ void MqttSubscriber::start_receive() {
     client_.async_receive([this](boost::mqtt5::error_code ec, const std::string topic, const std::string payload,
                                  boost::mqtt5::publish_props props) {
         if (!ec) {
-            spdlog::info("read {} {}", topic, payload);
             callback_(topic, payload);
             // 继续接收下一条消息
             start_receive();

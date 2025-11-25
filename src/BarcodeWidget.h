@@ -7,9 +7,9 @@
 #include <opencv2/opencv.hpp>
 #include <qfuturewatcher.h>
 
-
 #include "convert.h"
 #include "mqtt/mqtt_client.h"
+#include "mqtt/MQTTMessageWidget.h"
 
 class QLineEdit;
 class QPushButton;
@@ -70,7 +70,7 @@ signals:
      * @details
      * 当客户端订阅的 MQTT 主题有消息到达时，会触发此信号。
      */
-    void mqttMessageReceived(const QString& topic, const QString& payload);
+    void mqttMessageReceived(const QString& topic, const QByteArray& payload);
 
 private slots:
     /**
@@ -104,6 +104,11 @@ private slots:
      * @brief 显示关于软件的信息对话框。
      */
     void showAbout() const;
+
+    /**
+     * @brief 显示 MQTT 消息调试监控窗口。
+     */
+    void showMqttDebugMonitor() const;
 
     /**
      * @brief 将 OpenCV 中的 Mat 对象转换为 QImage 格式。
@@ -154,4 +159,5 @@ private:
     QLineEdit*                      heightInput;                                         /**< 图片高度输入框  */
     QFileDialog*                    fileDialog;                                          /**< 文件选择弹窗    */
     std::unique_ptr<MqttSubscriber> subscriber_;                                         /**< MQTT 订阅者实例  */
+    std::unique_ptr<MQTTMessageWidget> messageWidget;
 };
