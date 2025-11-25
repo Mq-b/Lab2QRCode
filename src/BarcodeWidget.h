@@ -153,6 +153,7 @@ private:
     std::vector<convert::result_data_entry> lastResults;         /**< 上次解码产生的结果 */
     QScrollArea*                            scrollArea;          /**< 滚动区域 */
     QCheckBox*                              base64CheckBox;      /**< 是否使用base64 */
+    QCheckBox*                              directTextCheckBox;  /**< 新增：是否直接使用文本框内容作为数据 */
     QComboBox*                              formatComboBox;      /**< 条码格式选择框 */
     ZXing::BarcodeFormat            currentBarcodeFormat = ZXing::BarcodeFormat::QRCode; /**< 当前选择的条码格式  */
     QLineEdit*                      widthInput;                                          /**< 图片宽度输入框  */

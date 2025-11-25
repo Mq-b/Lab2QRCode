@@ -212,6 +212,11 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     base64CheckBox->setChecked(true);
     buttonLayout->addWidget(base64CheckBox);
 
+    directTextCheckBox = new QCheckBox("直接文本", this);
+    directTextCheckBox->setFont(QFont("Arial", 14));
+    directTextCheckBox->setToolTip("勾选后，输入框内的文字将直接作为条码内容，而不是文件路径");
+    buttonLayout->addWidget(directTextCheckBox);
+
     auto* comboBoxLayout      = new QHBoxLayout();
 
     QComboBox* formatComboBox = new QComboBox(this);
@@ -289,8 +294,27 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
         messageWidget->addMessage(topic,payload);
     });
 
+    connect(directTextCheckBox, &QCheckBox::stateChanged, this, [this, browseButton](int state) {
+        filePathEdit->clear();
+        lastSelectedFiles.clear();
+        lastResults.clear();
+
+        if(state) {
+            filePathEdit->setPlaceholderText("输入要转换的文字");
+            browseButton->setEnabled(false);
+        }else {
+            filePathEdit->setPlaceholderText("选择一个文件或图片");
+            browseButton->setEnabled(true);
+            decodeToChemFile->setEnabled(false);
+        }
+
+        renderResults();
+        updateButtonStates();
+    });
+
     connect(fileDialog, &QFileDialog::filesSelected, this, [this](const QStringList& filenames) {
-        filePathEdit->setText(lastSelectedFiles.join(QDir::listSeparator()));
+        filePathEdit->clear();
+        filePathEdit->setText(filenames.join(QDir::listSeparator()));
         lastSelectedFiles = filenames;
         lastResults.clear();
         renderResults();
@@ -330,6 +354,76 @@ void BarcodeWidget::onBrowseFile() const {
 }
 
 void BarcodeWidget::onGenerateClicked() {
+    const auto reqWidth  = widthInput->text().toInt();
+    const auto reqHeight = heightInput->text().toInt();
+    const auto useBase64 = base64CheckBox->isChecked();
+    const auto format    = currentBarcodeFormat;
+
+    if (directTextCheckBox->isChecked()) {
+        QString rawText = filePathEdit->text();
+        if (rawText.isEmpty()) return;
+
+        // 构造一个包含单个元素的列表，以便复用 QtConcurrent::mapped
+        // 这样可以不用重写 onBatchFinish 的逻辑
+        QStringList inputs;
+        inputs.append(rawText);
+
+        // 准备 UI
+        progressBar->setVisible(true);
+        progressBar->setRange(0, 1);
+        progressBar->setValue(0);
+        generateButton->setEnabled(false);
+        saveButton->setEnabled(false);
+        this->setCursor(Qt::WaitCursor);
+
+        // 定义处理文本的 Worker
+        struct TextWorker {
+            using result_type = convert::result_data_entry;
+
+            bool useBase64;
+            convert::QRcode_create_config config;
+
+            convert::result_data_entry operator()(const QString& textInput) const {
+                convert::result_data_entry res;
+                // 对于直接文本模式，source_file_name 可以设为空，或者设为一个标识字符串
+                // 这样在保存文件时，会默认生成 "qrcode.png" 之类的名字
+                res.source_file_name = "raw_text_input";
+
+                try {
+                    std::string content;
+                    if (useBase64) {
+                        // 如果勾选了 Base64，先将输入文本转为 UTF-8 字节流，再 Base64 编码
+                        QByteArray data = textInput.toUtf8();
+                        content = SimpleBase64::encode(reinterpret_cast<const std::uint8_t*>(data.constData()), data.size());
+                    } else {
+                        content = textInput.toStdString();
+                    }
+
+                    auto img = convert::byte_to_QRCode_qimage(
+                        content, config);
+
+                    if (!img.isNull()) {
+                        res.data = img;
+                    } else {
+                        res.data = std::string("生成图片失败");
+                    }
+                } catch (const std::exception& e) {
+                    res.data.emplace<std::string>(e.what());
+                }
+                return res;
+            }
+        };
+
+        auto* watcher = new QFutureWatcher<convert::result_data_entry>(this);
+        connect(watcher, &QFutureWatcher<convert::result_data_entry>::finished,
+            [this, watcher] { onBatchFinish(*watcher); });
+
+        // 启动异步任务
+        watcher->setFuture(QtConcurrent::mapped(inputs, TextWorker{useBase64, {reqWidth, reqHeight, format}}));
+
+        return; // 结束函数，不再执行下方的文件处理逻辑
+    }
+
     QStringList filePaths;
     filePaths.reserve(static_cast<int>(lastResults.size()));
 
@@ -337,19 +431,18 @@ void BarcodeWidget::onGenerateClicked() {
     std::ranges::copy(lastSelectedFiles | std::views::filter([](const QString& file) {
         return !fileExtensionRegex_image.match(file).hasMatch();
     }), std::back_inserter(filePaths));
-
+    if (filePaths.empty()) {
+        QMessageBox::warning(this, "警告", "无可处理文件");
+        return;
+    }
     // 2. UI 状态准备
     progressBar->setVisible(true);
     progressBar->setRange(0, filePaths.size()); // 设置进度条范围
     progressBar->setValue(0);
     generateButton->setEnabled(false);
+    decodeToChemFile->setEnabled(false);
     saveButton->setEnabled(false);
     this->setCursor(Qt::WaitCursor);
-
-    const auto reqWidth  = widthInput->text().toInt();
-    const auto reqHeight = heightInput->text().toInt();
-    const auto useBase64 = base64CheckBox->isChecked();
-    const auto format    = currentBarcodeFormat;
 
     struct worker {
         using result_type = convert::result_data_entry;
@@ -364,7 +457,7 @@ void BarcodeWidget::onGenerateClicked() {
 
                 convert::result_data_entry res;
                 if (!file.open(QIODevice::ReadOnly)) {
-                    res.data             = std::string("无法打开文件: ") + filePath.toStdString();
+                    res.data = std::string("无法打开文件: ") + filePath.toStdString();
                     res.source_file_name = std::move(filePath);
                     return res;
                 } else {
@@ -427,6 +520,7 @@ void BarcodeWidget::onDecodeToChemFileClicked() {
     progressBar->setRange(0, filePaths.size()); // 设置进度条范围
     progressBar->setValue(0);
     generateButton->setEnabled(false);
+    decodeToChemFile->setEnabled(false);
     saveButton->setEnabled(false);
     this->setCursor(Qt::WaitCursor);
 
@@ -664,6 +758,10 @@ void BarcodeWidget::showAbout() const {
     aboutDialog->deleteLater();
 }
 
+void BarcodeWidget::showMqttDebugMonitor() const {
+    messageWidget->show();
+}
+
 QImage BarcodeWidget::MatToQImage(const cv::Mat& mat) const {
     if (mat.type() == CV_8UC1)
         return QImage(mat.data, mat.cols, mat.rows, static_cast<int>(mat.step), QImage::Format_Grayscale8).copy();
@@ -679,6 +777,16 @@ void BarcodeWidget::renderResults() const {
     QWidget* container = new QWidget();
     // 容器背景设为透明或跟随 ScrollArea
     container->setStyleSheet("background-color: transparent;");
+
+    if (lastResults.empty() && directTextCheckBox->isChecked()) {
+        QVBoxLayout* vLayout = new QVBoxLayout(container);
+        QLabel* infoLabel = new QLabel("当前模式：直接文本生成\n请输入内容并点击生成");
+        infoLabel->setAlignment(Qt::AlignCenter);
+        infoLabel->setStyleSheet("font-size: 16px; color: #555;");
+        vLayout->addWidget(infoLabel);
+        scrollArea->setWidget(container);
+        return;
+    }
 
     constexpr int maxColumns = 4; // 每行最多4个 (仅用于多结果)
 
@@ -920,7 +1028,16 @@ void BarcodeWidget::renderResults() const {
 
 void BarcodeWidget::onBatchFinish(QFutureWatcher<convert::result_data_entry>& watcher) {
     setCursor(Qt::ArrowCursor);
-    generateButton->setEnabled(true);
+    if(lastSelectedFiles.size() == 1) {
+        auto& file = lastSelectedFiles.front();
+        bool isImage = fileExtensionRegex_image.match(file).hasMatch();
+        generateButton->setEnabled(!isImage);
+        decodeToChemFile->setEnabled(isImage);
+    }else if(!lastSelectedFiles.isEmpty()){
+        generateButton->setEnabled(true);
+        decodeToChemFile->setEnabled(true);
+    }
+
     progressBar->setVisible(false);
 
     QList<convert::result_data_entry> results = watcher.future().results();
