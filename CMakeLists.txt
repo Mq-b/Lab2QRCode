@@ -18,11 +18,10 @@ add_custom_target(RunPowerShellScript ALL
     COMMAND ${CMAKE_COMMAND} -E echo "Running PowerShell script..."
     COMMAND pwsh -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/version_info
-    COMMENT "Generating version.cpp"
+    COMMENT "powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1"
     BYPRODUCTS ${VERSION_CPP}
 )
 
-message(STATUS "PowerShell command: powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1")
 
 if(MSVC)
     add_compile_options(/EHsc /utf-8 /bigobj)
@@ -35,13 +34,9 @@ find_package(OpenCV REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS
     headers
     random
-    uuid
 )
 find_package(spdlog CONFIG REQUIRED)
 
-get_target_property(ZXING_INCLUDES ZXing::ZXing INTERFACE_INCLUDE_DIRECTORIES)
-
-message(STATUS "ZXing include path = ${ZXING_INCLUDES}")
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 add_executable(${PROJECT_NAME} 
@@ -53,8 +48,6 @@ add_executable(${PROJECT_NAME}
 add_dependencies(${PROJECT_NAME} RunPowerShellScript)
 
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${ZXING_INCLUDES})
-
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     Qt5::Core
     Qt5::Widgets
@@ -63,7 +56,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${OpenCV_LIBS}
     Boost::headers
     Boost::random
-    Boost::uuid
     spdlog::spdlog_header_only
 )
 
