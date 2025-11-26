@@ -60,7 +60,7 @@ log_dest stdout
 客户端订阅消息：
 
 ```shell
-.\mosquitto_sub.exe -h 127.0.0.1 -t 'test/topic' -v
+mosquitto_sub -h 127.0.0.1 -t 'test/topic' -v
 ```
 
 客户端发布订阅：

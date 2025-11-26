@@ -7,7 +7,7 @@ $git_hash = git rev-parse --short HEAD 2>$null
 $git_tag = git describe --tags --abbrev=0 2>$null
 
 # 获取当前的 Git 分支名
-$git_branch = git branch --show-current
+$git_branch = 'master'
 
 # 获取当前仓库最新提交的时间
 $git_commit_time = git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S' 2>$null
