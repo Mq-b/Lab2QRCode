@@ -132,9 +132,11 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
 
     QAction* aboutAction = new QAction("关于软件", this);
     QAction* debugMqttAction = new QAction("MQTT实时消息监控窗口", this);
+    QAction* openCameraScanAction = new QAction("打开摄像头扫码", this);
     aboutAction->setFont(menuFont);
     helpMenu->addAction(aboutAction);
     toolsMenu->addAction(debugMqttAction);
+    toolsMenu->addAction(openCameraScanAction);
 
     // 连接菜单项的点击信号
     connect(aboutAction, &QAction::triggered, this, &BarcodeWidget::showAbout);
@@ -212,7 +214,7 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     base64CheckBox->setChecked(true);
     buttonLayout->addWidget(base64CheckBox);
 
-    directTextCheckBox = new QCheckBox("直接文本", this);
+    directTextCheckBox = new QCheckBox("文本输入", this);
     directTextCheckBox->setFont(QFont("Arial", 14));
     directTextCheckBox->setToolTip("勾选后，输入框内的文字将直接作为条码内容，而不是文件路径");
     buttonLayout->addWidget(directTextCheckBox);
