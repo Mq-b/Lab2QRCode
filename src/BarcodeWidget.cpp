@@ -15,14 +15,9 @@
 #include <QProgressBar>
 #include <QPushButton>
 #include <QScrollArea>
-#include <QVBoxLayout>
 #include <QtConcurrent>
 #include <SimpleBase64.h>
 #include <ZXing/BarcodeFormat.h>
-#include <ZXing/BitMatrix.h>
-#include <ZXing/DecodeHints.h>
-#include <ZXing/MultiFormatWriter.h>
-#include <ZXing/ReadBarcode.h>
 #include <ZXing/TextUtfEncoding.h>
 #include <opencv2/opencv.hpp>
 #include <spdlog/spdlog.h>
@@ -124,20 +119,31 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     setWindowTitle("Lab2QRCode");
     setMinimumSize(500, 600);
 
-    QMenuBar* menuBar  = new QMenuBar();
-    QMenu*    helpMenu = menuBar->addMenu("帮助");
-    QMenu*    toolsMenu = menuBar->addMenu("工具");
+    menuBar  = new QMenuBar();
+    helpMenu = menuBar->addMenu("帮助");
+    toolsMenu = menuBar->addMenu("工具");
+    settingMenu = menuBar->addMenu("设置");
 
-    QFont menuFont("SimHei", 12);
+    QFont menuFont("Arial", 12);
     menuBar->setFont(menuFont);
 
-    QAction* aboutAction = new QAction("关于软件", this);
-    QAction* debugMqttAction = new QAction("MQTT实时消息监控窗口", this);
-    QAction* openCameraScanAction = new QAction("打开摄像头扫码", this);
-    aboutAction->setFont(menuFont);
+    aboutAction = new QAction("关于软件", this);
+    debugMqttAction = new QAction("MQTT实时消息监控窗口", this);
+    openCameraScanAction = new QAction("打开摄像头扫码", this);
+    // base64勾选，默认勾选
+    base64CheckAcion = new QAction("Base64", this);
+    base64CheckAcion->setCheckable(true);
+    base64CheckAcion->setChecked(true); // 默认勾选
+
+    directTextAction = new QAction("文本输入", this);
+    directTextAction->setCheckable(true);
+    directTextAction->setChecked(false); // 默认不勾选
+
     helpMenu->addAction(aboutAction);
     toolsMenu->addAction(debugMqttAction);
     toolsMenu->addAction(openCameraScanAction);
+    settingMenu->addAction(base64CheckAcion);
+    settingMenu->addAction(directTextAction);
 
     // 连接菜单项的点击信号
     connect(aboutAction, &QAction::triggered, this, &BarcodeWidget::showAbout);
@@ -210,16 +216,6 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     scrollArea->setStyleSheet("QScrollArea { background-color: #f0f0f0; border: 1px solid #ccc; }");
     mainLayout->addWidget(scrollArea);
 
-    base64CheckBox = new QCheckBox("Base64", this);
-    base64CheckBox->setFont(QFont("Arial", 14));
-    base64CheckBox->setChecked(true);
-    buttonLayout->addWidget(base64CheckBox);
-
-    directTextCheckBox = new QCheckBox("文本输入", this);
-    directTextCheckBox->setFont(QFont("Arial", 14));
-    directTextCheckBox->setToolTip("勾选后，输入框内的文字将直接作为条码内容，而不是文件路径");
-    buttonLayout->addWidget(directTextCheckBox);
-
     auto* comboBoxLayout      = new QHBoxLayout();
 
     QComboBox* formatComboBox = new QComboBox(this);
@@ -228,6 +224,7 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     for (const auto& item : qAsConst(barcodeFormats)) {
         formatComboBox->addItem(item);
     }
+    formatComboBox->setCurrentText("QRCode");
 
     QLabel* formatLabel = new QLabel("选择条码类型:", this);
     formatLabel->setFont(QFont("Consolas", 14));
@@ -297,12 +294,12 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
         messageWidget->addMessage(topic,payload);
     });
 
-    connect(directTextCheckBox, &QCheckBox::stateChanged, this, [this, browseButton](int state) {
+    connect(directTextAction, &QAction::toggled, this, [this, browseButton](bool checked) {
         filePathEdit->clear();
         lastSelectedFiles.clear();
         lastResults.clear();
 
-        if(state) {
+        if(checked) {
             filePathEdit->setPlaceholderText("输入要转换的文字");
             browseButton->setEnabled(false);
         }else {
@@ -359,10 +356,10 @@ void BarcodeWidget::onBrowseFile() const {
 void BarcodeWidget::onGenerateClicked() {
     const auto reqWidth  = widthInput->text().toInt();
     const auto reqHeight = heightInput->text().toInt();
-    const auto useBase64 = base64CheckBox->isChecked();
+    const auto useBase64 = base64CheckAcion->isChecked();
     const auto format    = currentBarcodeFormat;
 
-    if (directTextCheckBox->isChecked()) {
+    if (directTextAction->isChecked()) {
         QString rawText = filePathEdit->text();
         if (rawText.isEmpty()) return;
 
@@ -564,7 +561,7 @@ void BarcodeWidget::onDecodeToChemFileClicked() {
     connect(watcher, &QFutureWatcher<convert::result_data_entry>::finished,
         [this, watcher] { onBatchFinish(*watcher); });
 
-    watcher->setFuture(QtConcurrent::mapped(filePaths, worker{base64CheckBox->isChecked()}));
+    watcher->setFuture(QtConcurrent::mapped(filePaths, worker{base64CheckAcion->isChecked()}));
 }
 
 void BarcodeWidget::onSaveClicked() {
@@ -781,7 +778,7 @@ void BarcodeWidget::renderResults() const {
     // 容器背景设为透明或跟随 ScrollArea
     container->setStyleSheet("background-color: transparent;");
 
-    if (lastResults.empty() && directTextCheckBox->isChecked()) {
+    if (lastResults.empty() && directTextAction->isChecked()) {
         QVBoxLayout* vLayout = new QVBoxLayout(container);
         QLabel* infoLabel = new QLabel("当前模式：直接文本生成\n请输入内容并点击生成");
         infoLabel->setAlignment(Qt::AlignCenter);
