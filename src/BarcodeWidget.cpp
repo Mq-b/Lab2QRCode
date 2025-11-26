@@ -1062,6 +1062,12 @@ void BarcodeWidget::onBatchFinish(QFutureWatcher<convert::result_data_entry>& wa
     watcher.deleteLater();
 }
 
+
+template <>
+struct magic_enum::customize::enum_range<ZXing::BarcodeFormat>{
+    static constexpr bool is_flags = true;
+};
+
 QString BarcodeWidget::barcodeFormatToString(ZXing::BarcodeFormat format) {
     static const auto map = [] {
         QMap<ZXing::BarcodeFormat, QString> map;
@@ -1089,3 +1095,11 @@ ZXing::BarcodeFormat BarcodeWidget::stringToBarcodeFormat(const QString& formatS
 
     return map.value(key, ZXing::BarcodeFormat::None); // 未匹配时返回None
 }
+
+const QStringList BarcodeWidget::barcodeFormats = [] {
+    QStringList list;
+    for (const auto & [k, v] : magic_enum::enum_entries<ZXing::BarcodeFormat>()) {
+        list.append(QString::fromUtf8(v.data(), static_cast<int>(v.size())));
+    }
+    return list;
+}();

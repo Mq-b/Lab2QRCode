@@ -38,28 +38,7 @@ public:
     explicit BarcodeWidget(QWidget* parent = nullptr);
 
 private:
-    static inline const QStringList barcodeFormats = {
-        "QRCode",          // ZXing::BarcodeFormat::QRCode
-        "Aztec",           // ZXing::BarcodeFormat::Aztec
-        "Codabar",         // ZXing::BarcodeFormat::Codabar
-        "Code39",          // ZXing::BarcodeFormat::Code39
-        "Code93",          // ZXing::BarcodeFormat::Code93
-        "Code128",         // ZXing::BarcodeFormat::Code128
-        "DataBar",         // ZXing::BarcodeFormat::DataBar
-        "DataBarExpanded", // ZXing::BarcodeFormat::DataBarExpanded
-        "DataMatrix",      // ZXing::BarcodeFormat::DataMatrix
-        "EAN8",            // ZXing::BarcodeFormat::EAN8
-        "EAN13",           // ZXing::BarcodeFormat::EAN13
-        "ITF",             // ZXing::BarcodeFormat::ITF
-        "MaxiCode",        // ZXing::BarcodeFormat::MaxiCode
-        "PDF417",          // ZXing::BarcodeFormat::PDF417
-        "UPCA",            // ZXing::BarcodeFormat::UPCA
-        "UPCE",            // ZXing::BarcodeFormat::UPCE
-        "MicroQRCode",     // ZXing::BarcodeFormat::MicroQRCode
-        "RMQRCode",        // ZXing::BarcodeFormat::RMQRCode
-        "DXFilmEdge",      // ZXing::BarcodeFormat::DXFilmEdge
-        "DataBarLimited"   // ZXing::BarcodeFormat::DataBarLimited
-    };
+    static const QStringList barcodeFormats;
 
 signals:
     /**
