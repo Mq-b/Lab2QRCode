@@ -23,6 +23,7 @@
 - [**`spdlog`**](https://github.com/gabime/spdlog) - 日志
 - [**`nlohmann_json`**](https://github.com/nlohmann/json) - JSON 数据处理
 - [**`mqtt5`**](https://github.com/boostorg/mqtt5) - 消息订阅
+- [**`magic_enum`**](https://github.com/Neargye/magic_enum) - 枚举转字符串
 
 使用 Visual Studio 17 或 gcc 工具链构建。
 
