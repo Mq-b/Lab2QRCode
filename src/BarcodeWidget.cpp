@@ -30,6 +30,7 @@
 #include <ranges>
 #include "convert.h"
 #include "version_info/version.h"
+#include <magic_enum/magic_enum.hpp>
 
 template <typename Ret, typename... Fs>
     requires(std::is_void_v<Ret> || std::is_default_constructible_v<Ret>)
@@ -500,7 +501,7 @@ void BarcodeWidget::onGenerateClicked() {
 
     connect(watcher, &QFutureWatcher<convert::result_data_entry>::progressValueChanged, progressBar, &QProgressBar::setValue);
 
-    connect(watcher, &QFutureWatcher<convert::result_data_entry>::finished, 
+    connect(watcher, &QFutureWatcher<convert::result_data_entry>::finished,
         [this, watcher] {
             onBatchFinish(*watcher);
         }
@@ -1062,63 +1063,29 @@ void BarcodeWidget::onBatchFinish(QFutureWatcher<convert::result_data_entry>& wa
 }
 
 QString BarcodeWidget::barcodeFormatToString(ZXing::BarcodeFormat format) {
-    static const QMap<ZXing::BarcodeFormat, QString> map = {
-        {ZXing::BarcodeFormat::None,            "None"           },
-        {ZXing::BarcodeFormat::Aztec,           "Aztec"          },
-        {ZXing::BarcodeFormat::Codabar,         "Codabar"        },
-        {ZXing::BarcodeFormat::Code39,          "Code39"         },
-        {ZXing::BarcodeFormat::Code93,          "Code93"         },
-        {ZXing::BarcodeFormat::Code128,         "Code128"        },
-        {ZXing::BarcodeFormat::DataBar,         "DataBar"        },
-        {ZXing::BarcodeFormat::DataBarExpanded, "DataBarExpanded"},
-        {ZXing::BarcodeFormat::DataMatrix,      "DataMatrix"     },
-        {ZXing::BarcodeFormat::EAN8,            "EAN8"           },
-        {ZXing::BarcodeFormat::EAN13,           "EAN13"          },
-        {ZXing::BarcodeFormat::ITF,             "ITF"            },
-        {ZXing::BarcodeFormat::MaxiCode,        "MaxiCode"       },
-        {ZXing::BarcodeFormat::PDF417,          "PDF417"         },
-        {ZXing::BarcodeFormat::QRCode,          "QRCode"         },
-        {ZXing::BarcodeFormat::UPCA,            "UPCA"           },
-        {ZXing::BarcodeFormat::UPCE,            "UPCE"           },
-        {ZXing::BarcodeFormat::MicroQRCode,     "MicroQRCode"    },
-        {ZXing::BarcodeFormat::RMQRCode,        "RMQRCode"       },
-        {ZXing::BarcodeFormat::DXFilmEdge,      "DXFilmEdge"     },
-        {ZXing::BarcodeFormat::DataBarLimited,  "DataBarLimited" }
-    };
+    static const auto map = [] {
+        QMap<ZXing::BarcodeFormat, QString> map;
+        for (const auto & [k, v] : magic_enum::enum_entries<ZXing::BarcodeFormat>()) {
+            map.insert(k, QString::fromUtf8(v.data(), static_cast<int>(v.size())));
+        }
+        return map;
+    }();
 
     return map.value(format, "Unknown");
 }
 
 
 ZXing::BarcodeFormat BarcodeWidget::stringToBarcodeFormat(const QString& formatStr) {
-    static const QMap<QString, ZXing::BarcodeFormat> map = {
-        {"Aztec",           ZXing::BarcodeFormat::Aztec          },
-        {"Codabar",         ZXing::BarcodeFormat::Codabar        },
-        {"Code39",          ZXing::BarcodeFormat::Code39         },
-        {"Code93",          ZXing::BarcodeFormat::Code93         },
-        {"Code128",         ZXing::BarcodeFormat::Code128        },
-        {"DataBar",         ZXing::BarcodeFormat::DataBar        },
-        {"DataBarExpanded", ZXing::BarcodeFormat::DataBarExpanded},
-        {"DataMatrix",      ZXing::BarcodeFormat::DataMatrix     },
-        {"EAN8",            ZXing::BarcodeFormat::EAN8           },
-        {"EAN13",           ZXing::BarcodeFormat::EAN13          },
-        {"ITF",             ZXing::BarcodeFormat::ITF            },
-        {"MaxiCode",        ZXing::BarcodeFormat::MaxiCode       },
-        {"PDF417",          ZXing::BarcodeFormat::PDF417         },
-        {"QRCode",          ZXing::BarcodeFormat::QRCode         },
-        {"UPCA",            ZXing::BarcodeFormat::UPCA           },
-        {"UPCE",            ZXing::BarcodeFormat::UPCE           },
-        {"MicroQRCode",     ZXing::BarcodeFormat::MicroQRCode    },
-        {"RMQRCode",        ZXing::BarcodeFormat::RMQRCode       },
-        {"DXFilmEdge",      ZXing::BarcodeFormat::DXFilmEdge     },
-        {"DataBarLimited",  ZXing::BarcodeFormat::DataBarLimited }
-    };
+    static const auto map = [] {
+        QMap<QString, ZXing::BarcodeFormat> map;
+        for (const auto & [k, v] : magic_enum::enum_entries<ZXing::BarcodeFormat>()) {
+            map.insert(QString::fromUtf8(v.data(), static_cast<int>(v.size())), k);
+        }
+        return map;
+    }();
 
     QString key = formatStr.trimmed();
-    key[0]      = key[0].toUpper(); // 确保首字母大写以匹配上面的key
-    auto it     = map.find(key);
-    if (it != map.end())
-        return it.value();
+    key[0] = key[0].toUpper(); // 确保首字母大写以匹配上面的key
 
-    return ZXing::BarcodeFormat::None; // 未匹配时返回None
+    return map.value(key, ZXing::BarcodeFormat::None); // 未匹配时返回None
 }
