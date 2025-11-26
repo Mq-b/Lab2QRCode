@@ -547,7 +547,7 @@ void BarcodeWidget::onDecodeToChemFileClicked() {
                         decodedData = std::vector<std::uint8_t>(rst.text.begin(), rst.text.end());
                     }
                     return {std::move(path),
-                        QByteArray(reinterpret_cast<const char*>(decodedData.data()), decodedData.size())};
+                        QByteArray(reinterpret_cast<const char*>(decodedData.data()), static_cast<int>(decodedData.size()))};
                 }
             } catch (const std::exception& e) {
                 return {std::move(path), QString("解码失败:\n%1").arg(e.what()).toStdString()};
