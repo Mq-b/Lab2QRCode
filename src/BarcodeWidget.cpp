@@ -26,7 +26,7 @@
 #include "convert.h"
 #include "version_info/version.h"
 #include <magic_enum/magic_enum.hpp>
-
+#include "components/message_dialog.h"
 template <typename Ret, typename... Fs>
     requires(std::is_void_v<Ret> || std::is_default_constructible_v<Ret>)
 struct overload_def_noop : private Fs... {
@@ -292,9 +292,46 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
         // 设置当前选择的条码格式
         currentBarcodeFormat = stringToBarcodeFormat(barcodeFormats[index]);
     });
-    connect(this, &BarcodeWidget::mqttMessageReceived, this, [this](const QString& topic, const QByteArray& payload) {
-        //QMessageBox::information(this, "订阅消息", QString("主题: %1\n内容: %2").arg(topic, payload));
-        messageWidget->addMessage(topic,payload);
+    connect(this,
+            &BarcodeWidget::mqttMessageReceived,
+            this,
+            [this](const QString& topic, const QByteArray& payload) {
+                // 记录收到的消息
+                spdlog::info("MQTT Received: topic={}, payload={}",
+                                topic.toStdString(),
+                                payload.toStdString());
+
+                QJsonParseError parseError;
+                QJsonDocument doc = QJsonDocument::fromJson(payload, &parseError);
+                if (parseError.error != QJsonParseError::NoError || !doc.isObject())
+                {
+                    spdlog::warn("JSON解析失败: {} , payload={}",
+                                    parseError.errorString().toStdString(),
+                                    payload.toStdString());
+                    messageWidget->addMessage(topic, payload); // 仍然显示原始消息
+                    return;
+                }
+
+                QJsonObject obj = doc.object();
+                QString type = obj.value("type").toString();
+                QString content = obj.value("content").toString();
+
+                // 根据 type 弹窗
+                if (type == "info")
+                {
+                    MessageDialog::information(this, QString("主题: %1").arg(topic), content);
+                }
+                else if (type == "update")
+                {
+                    QWidget* mask = new QWidget(this);
+                    mask->setStyleSheet("background-color: rgba(0, 0, 0,100);");
+                    mask->resize(this->size());
+                    mask->show();
+                    mask->raise();
+                    MessageDialog::updateDialog(this, "更新", content, {"忽略"});
+                    mask->deleteLater();
+                }
+                messageWidget->addMessage(topic, payload);
     });
 
     connect(directTextAction, &QAction::toggled, this, [this, browseButton](bool checked) {
