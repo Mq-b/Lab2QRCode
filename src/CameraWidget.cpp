@@ -4,13 +4,41 @@
 #include <QMessageBox>
 #include <QMetaObject>
 #include <QDateTime>
+#include <qaction.h>
 #include <spdlog/spdlog.h>
 #include <QPushButton>
 #include <QComboBox>
 #include <QCameraInfo>
 #include <spdlog/spdlog.h>
 #include <QCameraInfo>
+#include <QMenuBar>
+#include <QToolButton>
+#include <magic_enum/magic_enum_format.hpp>
+#include <QWidgetAction>
 
+
+static const std::vector<std::pair<ZXing::BarcodeFormat, QString>> kBarcodeFormatList {
+    { ZXing::BarcodeFormat::Aztec,           "Aztec" },
+    { ZXing::BarcodeFormat::Codabar,         "Codabar" },
+    { ZXing::BarcodeFormat::Code39,          "Code39" },
+    { ZXing::BarcodeFormat::Code93,          "Code93" },
+    { ZXing::BarcodeFormat::Code128,         "Code128" },
+    { ZXing::BarcodeFormat::DataBar,         "DataBar" },
+    { ZXing::BarcodeFormat::DataBarExpanded, "DataBarExpanded" },
+    { ZXing::BarcodeFormat::DataMatrix,      "DataMatrix" },
+    { ZXing::BarcodeFormat::EAN8,            "EAN8" },
+    { ZXing::BarcodeFormat::EAN13,           "EAN13" },
+    { ZXing::BarcodeFormat::ITF,             "ITF" },
+    { ZXing::BarcodeFormat::MaxiCode,        "MaxiCode" },
+    { ZXing::BarcodeFormat::PDF417,          "PDF417" },
+    { ZXing::BarcodeFormat::QRCode,          "QRCode" },
+    { ZXing::BarcodeFormat::UPCA,            "UPCA" },
+    { ZXing::BarcodeFormat::UPCE,            "UPCE" },
+    { ZXing::BarcodeFormat::MicroQRCode,     "MicroQRCode" },
+    { ZXing::BarcodeFormat::RMQRCode,        "RMQRCode" },
+    { ZXing::BarcodeFormat::DXFilmEdge,      "DXFilmEdge" },
+    { ZXing::BarcodeFormat::DataBarLimited,  "DataBarLimited" },
+};
 // 构造函数里枚举摄像头
 CameraWidget::CameraWidget(QWidget* parent)
     : QWidget(parent)
@@ -19,27 +47,89 @@ CameraWidget::CameraWidget(QWidget* parent)
     setMinimumSize(800, 600);
 
     mainLayout = new QVBoxLayout(this);
+    menuBar = new QMenuBar(this);
 
-    auto* topLayout = new QHBoxLayout();
-    cameraCombo = new QComboBox(this);
-    topLayout->addWidget(cameraCombo);
+    cameraMenu = new QMenu("摄像头", this);
+    menuBar->addMenu(cameraMenu);
+    mainLayout->setMenuBar(menuBar); // 将菜单栏加到窗口布局
 
-    mainLayout->addLayout(topLayout);
+    // 菜单栏
+    QMenu* scanMenu = menuBar->addMenu("二维码类型");
+
+    // 全选按钮
+    QAction* selectAllAction = new QAction("全选", this);
+    scanMenu->addAction(selectAllAction);
+
+    // 清空按钮
+    QAction* clearAction = new QAction("清空", this);
+    scanMenu->addAction(clearAction);
+
+    // 添加分隔符
+    scanMenu->addSeparator();
+
+    // 逐个添加格式
+    QVector<QAction*> formatActions;
+    for (const auto& item : kBarcodeFormatList) {
+        ZXing::BarcodeFormat fmt = item.first;
+        const QString& name = item.second;
+
+        QAction* act = new QAction(name, this);
+        act->setCheckable(true);
+        act->setChecked(true);
+        act->setData(static_cast<int>(fmt));
+        scanMenu->addAction(act);
+
+        formatActions.push_back(act);
+    }
+
+    // 全选
+    connect(selectAllAction, &QAction::triggered, this, [this,formatActions]{
+        for (auto* act : formatActions) act->setChecked(true);
+        isEnabledScan = true;
+    });
+
+    // 清空
+    connect(clearAction, &QAction::triggered, this, [this,formatActions]{
+        for (auto* act : formatActions) act->setChecked(false);
+        isEnabledScan = false;
+    });
+
+    // 更新 currentBarcodeFormat
+    auto updateMask = [this,formatActions]{
+        bool anyChecked = false;
+        ZXing::BarcodeFormat mask = ZXing::BarcodeFormat::None;
+
+        for (auto* a : formatActions) {
+            if (a->isChecked()) {
+                anyChecked = true;
+                mask = static_cast<ZXing::BarcodeFormat>(
+                    static_cast<int>(mask) |
+                    a->data().toInt()  
+                );
+            }
+        }
+
+        currentBarcodeFormat = mask;
+        isEnabledScan = anyChecked;
+    };
+
+    for (auto* act : formatActions)
+        connect(act, &QAction::toggled, this, updateMask);
 
     // 使用 QCameraInfo 获取可用摄像头，避免 cv::VideoCapture 测试设备卡住
     const auto cameras = QCameraInfo::availableCameras();
     for (int i = 0; i < cameras.size(); ++i) {
         const auto& camInfo = cameras[i];
-        cameraCombo->addItem(
-            QString("%1 [%2]").arg(camInfo.description()).arg(i),
-            i
-        );
-        spdlog::info("camInfo: {}",camInfo.description().toStdString());
-        cameraCombo->setItemData(i, camInfo.deviceName(), Qt::ToolTipRole);
+        QAction* action = new QAction(camInfo.description(), this);
+        action->setData(i);  // 存摄像头索引
+        cameraMenu->addAction(action);
+        action->setCheckable(true);
+        connect(action, &QAction::triggered, this, [this, action]() {
+            int index = action->data().toInt();
+            currentCameraIndex = index;  // 更新当前摄像头
+            onCameraIndexChanged(index); // 切换摄像头
+        });
     }
-    spdlog::info("availableCameras: {}",cameras.size());
-    connect(cameraCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &CameraWidget::onCameraIndexChanged);
     // FrameWidget: 可缩放
     frameWidget = new FrameWidget();
     frameWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -72,12 +162,20 @@ void CameraWidget::onCameraIndexChanged(int index)
 void CameraWidget::toggleCamera()
 {
     if (cameraStarted) stopCamera();
-    else startCamera(cameraCombo->currentIndex());
+    else startCamera(currentCameraIndex);
 }
 void CameraWidget::hideEvent(QHideEvent* event)
 {
     stopCamera();  // 窗口隐藏时停止摄像头
     QWidget::hideEvent(event);  // 保留基类行为
+}
+
+void CameraWidget::showEvent(QShowEvent* event)
+{
+    QWidget::showEvent(event);  // 保留基类行为
+    if (!cameraStarted) {
+        startCamera(currentCameraIndex); // 使用当前摄像头索引
+    }
 }
 CameraWidget::~CameraWidget()
 {
@@ -104,7 +202,7 @@ void CameraWidget::startCamera(int camIndex)
 
         cap->set(cv::CAP_PROP_FRAME_WIDTH, 640);
         cap->set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-        cap->set(cv::CAP_PROP_FPS, 30);
+        cap->set(cv::CAP_PROP_FPS, 60);
 
         this->capture = cap.release();
 
@@ -131,7 +229,7 @@ void CameraWidget::captureLoop()
         result.frame = frame;
 
         QMetaObject::invokeMethod(this, [this, result]() { updateFrame(result); }, Qt::QueuedConnection);
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     spdlog::info("Capture thread stopped");
 }
@@ -166,7 +264,7 @@ void CameraWidget::updateFrame(const FrameResult& r)
 }
 
 // ----- Frame + ZXing -----
-inline ZXing::ImageView ImageViewFromMat(const cv::Mat& image)
+static ZXing::ImageView ImageViewFromMat(const cv::Mat& image)
 {
     using ZXing::ImageFormat;
     ImageFormat fmt = ImageFormat::None;
@@ -179,7 +277,7 @@ inline ZXing::ImageView ImageViewFromMat(const cv::Mat& image)
     return { image.data, image.cols, image.rows, fmt };
 }
 
-inline void DrawBarcode(cv::Mat& img, ZXing::Barcode bc)
+static void DrawBarcode(cv::Mat& img, ZXing::Barcode bc)
 {
     auto pos = bc.position();
     auto cvp = [](ZXing::PointI p) { return cv::Point(p.x, p.y); };
@@ -191,9 +289,17 @@ inline void DrawBarcode(cv::Mat& img, ZXing::Barcode bc)
 
 void CameraWidget::processFrame(cv::Mat& frame, FrameResult& out) const
 {
+    if(!isEnabledScan) return;
     auto barcodes = ZXing::ReadBarcodes(ImageViewFromMat(frame));
     for (auto& bc : barcodes) {
         if (!bc.isValid()) continue;
+
+        // 如果 currentBarcodeFormat = None -> 全部模式
+        if (currentBarcodeFormat != ZXing::BarcodeFormat::None &&
+            !(static_cast<int>(bc.format()) & static_cast<int>(currentBarcodeFormat))) {
+            continue; // 当前格式未被选中，跳过
+        }
+
         out.hasBarcode = true;
         out.type = QString::fromStdString(ZXing::ToString(bc.format()));
         out.content = QString::fromStdString(bc.text());

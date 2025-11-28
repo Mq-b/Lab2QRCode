@@ -39,29 +39,23 @@ FrameWidget::FrameWidget(QWidget *parent)
     setStyleSheet("QWidget{border:1px solid black; background-color:black;}");
 }
 
-//
-// ⭐ 接收 BGR888 Mat 并触发绘制
-//
-void FrameWidget::setFrame(const cv::Mat &bgr)
+void FrameWidget::setFrame(const cv::Mat& bgr)
 {
     if (bgr.empty() || bgr.type() != CV_8UC3) {
         spdlog::warn("PlayerWidget::setFrame received invalid mat");
         return;
     }
 
-    // 使用 QImage（深拷贝保证安全）
-    // QImage(const uchar*,int,int,int,Format) 不会深拷贝，需要 copy()
+    // 创建 RGB QImage 然后交换 R 和 B 通道
     m_image = QImage(
         bgr.data, bgr.cols, bgr.rows, bgr.step,
-        QImage::Format_BGR888
-    ).copy();   // 🔥 必须 copy()，否则 rgb 临时变量析构后数据失效
+        QImage::Format_RGB888
+    ).rgbSwapped().copy();   // 先交换通道再深拷贝
 
     update();   // 触发 Qt 重绘
 }
 
-//
-// ⭐ 根据 Widget 大小自动缩放绘制
-//
+
 void FrameWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
