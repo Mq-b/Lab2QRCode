@@ -149,6 +149,7 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     connect(aboutAction, &QAction::triggered, this, &BarcodeWidget::showAbout);
     connect(debugMqttAction, &QAction::triggered, this, &BarcodeWidget::showMqttDebugMonitor);
     connect(openCameraScanAction, &QAction::triggered, this,[this] {
+        spdlog::info("BarcodeWidget openCameraScanAction triggered");
         preview.startCamera();
         preview.show();
     });
