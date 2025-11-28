@@ -1,6 +1,6 @@
 #pragma once
 #include <QWidget>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 
 class FrameWidget : public QWidget {
     Q_OBJECT

@@ -2,7 +2,7 @@
 #include <QPainter>
 #include <QStyleOption>
 #include <spdlog/spdlog.h>
-
+#include <QImage>
 namespace {
 
 // 输入 outer rect 和图像宽高，返回居中等比缩放后的 rect
