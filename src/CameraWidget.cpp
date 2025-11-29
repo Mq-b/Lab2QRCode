@@ -1,3 +1,4 @@
+#include <QHeaderView>
 #include "CameraWidget.h"
 #include <ZXing/ReadBarcode.h>
 #include <QGroupBox>
@@ -15,7 +16,10 @@
 #include <QToolButton>
 #include <magic_enum/magic_enum_format.hpp>
 #include <QWidgetAction>
-
+#include <QLabel>
+#include <QTimer>
+#include <QStandardItemModel>
+#include <QTableView>
 
 static const std::vector<std::pair<ZXing::BarcodeFormat, QString>> kBarcodeFormatList {
     { ZXing::BarcodeFormat::Aztec,           "Aztec" },
@@ -39,6 +43,33 @@ static const std::vector<std::pair<ZXing::BarcodeFormat, QString>> kBarcodeForma
     { ZXing::BarcodeFormat::DXFilmEdge,      "DXFilmEdge" },
     { ZXing::BarcodeFormat::DataBarLimited,  "DataBarLimited" },
 };
+
+namespace {
+    
+ ZXing::ImageView ImageViewFromMat(const cv::Mat& image)
+{
+    using ZXing::ImageFormat;
+    ImageFormat fmt = ImageFormat::None;
+    switch (image.channels()) {
+    case 1: fmt = ImageFormat::Lum; break;
+    case 3: fmt = ImageFormat::BGR; break;
+    case 4: fmt = ImageFormat::BGRA; break;
+    }
+    if (image.depth() != CV_8U) return {nullptr,0,0,ImageFormat::None};
+    return { image.data, image.cols, image.rows, fmt };
+}
+
+ void DrawBarcode(cv::Mat& img, ZXing::Barcode bc)
+{
+    auto pos = bc.position();
+    auto cvp = [](ZXing::PointI p) { return cv::Point(p.x, p.y); };
+    std::vector<cv::Point> pts = {cvp(pos[0]), cvp(pos[1]), cvp(pos[2]), cvp(pos[3])};
+    cv::polylines(img, pts, true, CV_RGB(0,255,0));
+    cv::putText(img, bc.text(), cvp(pos[3]) + cv::Point(0,20),
+                cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0,255,0));
+}
+
+}
 // 构造函数里枚举摄像头
 CameraWidget::CameraWidget(QWidget* parent)
     : QWidget(parent)
@@ -123,7 +154,6 @@ CameraWidget::CameraWidget(QWidget* parent)
         QAction* action = new QAction(camInfo.description(), this);
         action->setData(i);  // 存摄像头索引
         cameraMenu->addAction(action);
-        action->setCheckable(true);
         connect(action, &QAction::triggered, this, [this, action]() {
             int index = action->data().toInt();
             currentCameraIndex = index;  // 更新当前摄像头
@@ -135,20 +165,50 @@ CameraWidget::CameraWidget(QWidget* parent)
     frameWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     mainLayout->addWidget(frameWidget, 1);
 
-    // 扫码结果
-    auto* resultGroup = new QGroupBox("扫码结果", this);
-    auto* resultLayout = new QVBoxLayout(resultGroup);
-    resultDisplay = new QTextEdit(this);
-    resultDisplay->setReadOnly(true);
-    resultDisplay->setMaximumHeight(120);
-    resultLayout->addWidget(resultDisplay);
-    resultGroup->setLayout(resultLayout);
-    mainLayout->addWidget(resultGroup);
+    {
+        resultModel = new QStandardItemModel(0, 4, this); // 行，列
+        resultModel->setHorizontalHeaderLabels({"时间", "类型", "内容", "状态"});
 
-    // 状态栏
-    statusBar = new QStatusBar(this);
-    statusBar->showMessage("摄像头就绪...");
-    mainLayout->addWidget(statusBar);
+        resultDisplay = new QTableView(this);
+        resultDisplay->setModel(resultModel);
+        resultDisplay->setMaximumHeight(150);
+        resultDisplay->setSelectionBehavior(QAbstractItemView::SelectRows);
+        resultDisplay->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        resultDisplay->verticalHeader()->setVisible(false); // 隐藏行号
+        // 或者使用比例方式
+        resultDisplay->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed); // 时间固定
+        resultDisplay->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed); // 类型固定
+        resultDisplay->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch); // 内容拉伸
+
+        resultDisplay->setAlternatingRowColors(true);
+        mainLayout->addWidget(resultDisplay);
+    }
+    {
+        statusBar = new QStatusBar(this);
+        
+        // 创建相机状态标签（左对齐）
+        cameraStatusLabel = new QLabel("摄像头就绪...", this);
+        statusBar->addWidget(cameraStatusLabel); // 默认左对齐
+        
+        // 添加弹簧将条码状态推到右边
+        statusBar->addPermanentWidget(new QLabel("")); // 空标签作为弹簧
+        
+        // 创建条码状态标签（右对齐）
+        barcodeStatusLabel = new QLabel(this);
+        barcodeStatusLabel->setAlignment(Qt::AlignRight);
+        statusBar->addPermanentWidget(barcodeStatusLabel);
+        
+        mainLayout->addWidget(statusBar);
+        
+        // 初始化计时器
+        barcodeClearTimer = new QTimer(this);
+        barcodeClearTimer->setSingleShot(true);
+        connect(barcodeClearTimer, &QTimer::timeout, this, [this]() {
+            barcodeStatusLabel->clear();
+            barcodeStatusLabel->setStyleSheet("");
+        });
+    }
+    
 }
 
 void CameraWidget::onCameraIndexChanged(int index)
@@ -159,11 +219,8 @@ void CameraWidget::onCameraIndexChanged(int index)
         startCamera(index);
     }
 }
-void CameraWidget::toggleCamera()
-{
-    if (cameraStarted) stopCamera();
-    else startCamera(currentCameraIndex);
-}
+
+
 void CameraWidget::hideEvent(QHideEvent* event)
 {
     stopCamera();  // 窗口隐藏时停止摄像头
@@ -207,11 +264,31 @@ void CameraWidget::startCamera(int camIndex)
         this->capture = cap.release();
 
         QMetaObject::invokeMethod(this, [this]() {
-            statusBar->showMessage("摄像头已启动");
+            cameraStatusLabel->setText("摄像头已启动");
             captureThread = std::thread(&CameraWidget::captureLoop, this);
         }, Qt::QueuedConnection);
     });
 }
+
+void CameraWidget::stopCamera()
+{
+    // ExcelExporter::instance().close();
+    frameWidget->clear();
+    if (!cameraStarted) return;
+    running = false;
+    if (captureThread.joinable()) captureThread.join();
+
+    if (capture) {
+        if (capture->isOpened()) capture->release();
+        delete capture;
+    }
+    capture = nullptr;
+    cameraStarted = false;
+
+    cameraStatusLabel->setText("摄像头已停止");
+}
+
+
 void CameraWidget::captureLoop()
 {
     spdlog::info("Capture thread started");
@@ -234,59 +311,6 @@ void CameraWidget::captureLoop()
     spdlog::info("Capture thread stopped");
 }
 
-void CameraWidget::stopCamera()
-{
-    frameWidget->clear();
-    if (!cameraStarted) return;
-    running = false;
-    if (captureThread.joinable()) captureThread.join();
-
-    if (capture) {
-        if (capture->isOpened()) capture->release();
-        delete capture;
-    }
-    capture = nullptr;
-    cameraStarted = false;
-
-    statusBar->showMessage("摄像头已停止");
-}
-
-void CameraWidget::updateFrame(const FrameResult& r)
-{
-    frameWidget->setFrame(r.frame);
-
-    if (r.hasBarcode) {
-        statusBar->showMessage("检测到 " + r.type + " 码");
-        displayScanResult(r.type.toStdString(), r.content.toStdString());
-    } else {
-        statusBar->showMessage("摄像头运行中...");
-    }
-}
-
-// ----- Frame + ZXing -----
-static ZXing::ImageView ImageViewFromMat(const cv::Mat& image)
-{
-    using ZXing::ImageFormat;
-    ImageFormat fmt = ImageFormat::None;
-    switch (image.channels()) {
-    case 1: fmt = ImageFormat::Lum; break;
-    case 3: fmt = ImageFormat::BGR; break;
-    case 4: fmt = ImageFormat::BGRA; break;
-    }
-    if (image.depth() != CV_8U) return {nullptr,0,0,ImageFormat::None};
-    return { image.data, image.cols, image.rows, fmt };
-}
-
-static void DrawBarcode(cv::Mat& img, ZXing::Barcode bc)
-{
-    auto pos = bc.position();
-    auto cvp = [](ZXing::PointI p) { return cv::Point(p.x, p.y); };
-    std::vector<cv::Point> pts = {cvp(pos[0]), cvp(pos[1]), cvp(pos[2]), cvp(pos[3])};
-    cv::polylines(img, pts, true, CV_RGB(0,255,0));
-    cv::putText(img, bc.text(), cvp(pos[3]) + cv::Point(0,20),
-                cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0,255,0));
-}
-
 void CameraWidget::processFrame(cv::Mat& frame, FrameResult& out) const
 {
     if(!isEnabledScan) return;
@@ -307,11 +331,50 @@ void CameraWidget::processFrame(cv::Mat& frame, FrameResult& out) const
     }
 }
 
-void CameraWidget::displayScanResult(const std::string& type, const std::string& content) const
+void CameraWidget::updateFrame(const FrameResult& r)
 {
-    QString t = QString("条码类型: %1\n内容: %2\n时间: %3\n------------------------\n")
-                .arg(QString::fromStdString(type))
-                .arg(QString::fromStdString(content))
-                .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
-    resultDisplay->insertPlainText(t);
+    frameWidget->setFrame(r.frame);
+
+    cameraStatusLabel->setText("摄像头运行中...");
+    
+    if (r.hasBarcode) {
+        barcodeStatusLabel->setText("检测到 " + r.type + " 码");
+        barcodeStatusLabel->setStyleSheet("color: green; font-weight: bold;");
+        
+        QString resultText = QString("条码类型: %1\n内容: %2\n时间: %3\n------------------------\n")
+                            .arg(r.type)
+                            .arg(r.content)
+                            .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+
+        // 检查是否与上一条记录相同
+        static QString lastContent;
+        static QString lastType;
+        
+        if (r.content == lastContent && r.type == lastType) {
+            barcodeClearTimer->start(3000);
+            return;
+        }
+        
+        // 更新上一次的记录
+        lastContent = r.content;
+        lastType = r.type;
+
+
+        QList<QStandardItem*> rowItems;
+        rowItems << new QStandardItem(QDateTime::currentDateTime().toString("hh:mm:ss"));
+        rowItems << new QStandardItem(r.type);
+        rowItems << new QStandardItem(r.content);
+        
+        // 设置颜色
+        rowItems[1]->setForeground(Qt::blue); // 类型蓝色
+        resultModel->insertRow(0, rowItems); // 插入到顶部
+        
+        // 限制行数
+        if (resultModel->rowCount() > 50) {
+            resultModel->removeRow(50);
+        }
+        // 导出到Excel
+        // ExcelExporter::instance().append(r);
+        barcodeClearTimer->start(3000);
+    } 
 }

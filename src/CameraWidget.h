@@ -11,17 +11,15 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include "FrameWidget.h"
-#include <zxing/BarcodeFormat.h>
-struct FrameResult
-{
-    cv::Mat frame; 
-    bool hasBarcode = false;
-    QString type;
-    QString content;
-};
+#include <ZXing/BarcodeFormat.h>
+#include "commondef.h"
 class QHideEvent;
 class QPushButton;
 class QMenuBar;
+class QLabel;
+class QTimer;
+class QTableView;
+class QStandardItemModel;
 class CameraWidget : public QWidget
 {
     Q_OBJECT
@@ -37,11 +35,9 @@ protected:
 
 private:
     void onCameraIndexChanged(int index);
-    void toggleCamera();
     void updateFrame(const FrameResult& r);
     void captureLoop();
     void processFrame(cv::Mat& frame, FrameResult& out) const;
-    void displayScanResult(const std::string& type, const std::string& content) const;
 
 private:
     cv::VideoCapture* capture = nullptr;
@@ -52,13 +48,17 @@ private:
     std::atomic_bool isEnabledScan = true;
     QVBoxLayout* mainLayout = nullptr;
     FrameWidget* frameWidget = nullptr;
-    QTextEdit* resultDisplay = nullptr;
+    QTableView* resultDisplay;
+    QStandardItemModel* resultModel;
     QStatusBar* statusBar = nullptr;
     QMenuBar* menuBar;
     QMenu* cameraMenu;
     int currentCameraIndex = 0;
     QComboBox* barcodeTypeCombo = nullptr;
-    ZXing::BarcodeFormat currentBarcodeFormat = ZXing::BarcodeFormat::None; // 默认检测所有
+    ZXing::BarcodeFormat currentBarcodeFormat = ZXing::BarcodeFormat::None;
+    QLabel* cameraStatusLabel;
+    QLabel* barcodeStatusLabel;
+    QTimer* barcodeClearTimer;
 };
 
 #endif // CAMERAWIDGET_H
