@@ -17,31 +17,29 @@
 
 ### 单文件生成与解码
 
-![demo2](./images/demo2.png)
+![单文件生成与解码](images/单文件生成和解码.gif)
 
-![demo2.1](./images/demo2.1.png)
 
 ### 手动输入生成条码
 
-![demo3](./images/demo3.png)
+![手动输入生成条码](images/手动输入生成条码.gif)
 
 ### 批量文件生成条码
 
 点击浏览按钮后打开目录，可多选文件。
 
-![demo4](./images/demo4.png)
+![批量文件生成条码](images/批量生成和解码.gif)
 
-![demo5](./images/demo5.png)
-
-### 批量文件解码
-
-![demo6](./images/demo6.png)
-
-![demo7](./images/demo7.png)
 
 解码不在乎条码类型选择的是什么，默认尝试所有 19 种条码进行解码。
 
 ### 摄像头扫描识别
+
+
+
+https://github.com/user-attachments/assets/d6fbb77c-bed0-4dca-acd7-50650591413e
+
+
 
 ## 构建
 
