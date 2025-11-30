@@ -1,20 +1,26 @@
 #pragma once
 #include <QWidget>
-#include <opencv2/core.hpp>
-
+#include <QImage>
+#include <ZXing/ReadBarcode.h>
+#include "commondef.h"
 class FrameWidget : public QWidget {
     Q_OBJECT
 public:
     explicit FrameWidget(QWidget *parent = nullptr);
 
-    // 接受外部 Mat（必须是 BGR888）
-    // 注意：函数内部会复制 Mat 数据（安全方式）
-    void setFrame(const cv::Mat &bgr);
+void setFrame(const QImage& frame);           // 设置视频帧
+void setBarcodeResult(const FrameResult& r);  // 设置二维码信息
     
     void clear();
 protected:
     void paintEvent(QPaintEvent *event) override;
 
+
 private:
-    QImage m_image;      // 转换后的图像
+    QRect scaleKeepAspect(const QRect &outer, int w, int h) const;
+
+
+private:
+    QImage m_image; 
+    FrameResult m_barcodeResult;
 };

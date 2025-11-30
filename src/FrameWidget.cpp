@@ -1,86 +1,86 @@
 #include "FrameWidget.h"
 #include <QPainter>
 #include <QStyleOption>
-#include <spdlog/spdlog.h>
-#include <QImage>
-namespace {
+#include <qnamespace.h>
 
-// 输入 outer rect 和图像宽高，返回居中等比缩放后的 rect
-QRect scaleKeepAspect(const QRect &outer, int w, int h)
-{
-    if (w <= 0 || h <= 0) return {};
 
-    const float outerW = outer.width();
-    const float outerH = outer.height();
-    const float imgRatio = float(w) / float(h);
-    const float viewRatio = outerW / outerH;
+QRect FrameWidget::scaleKeepAspect(const QRect &outer, int w, int h) const {
+  if (w <= 0 || h <= 0)
+    return {};
 
-    int newW, newH;
-    if (imgRatio > viewRatio) {
-        newW = outerW;
-        newH = outerW / imgRatio;
-    } else {
-        newH = outerH;
-        newW = outerH * imgRatio;
-    }
+  const float outerW = outer.width();
+  const float outerH = outer.height();
+  const float imgRatio = float(w) / float(h);
+  const float viewRatio = outerW / outerH;
 
-    return QRect(
-        outer.x() + (outerW - newW) / 2,
-        outer.y() + (outerH - newH) / 2,
-        newW, newH
-    );
+  int newW, newH;
+  if (imgRatio > viewRatio) {
+    newW = outerW;
+    newH = outerW / imgRatio;
+  } else {
+    newH = outerH;
+    newW = outerH * imgRatio;
+  }
+
+  return QRect(outer.x() + (outerW - newW) / 2, outer.y() + (outerH - newH) / 2,
+               newW, newH);
 }
 
-}
 
 FrameWidget::FrameWidget(QWidget *parent)
     : QWidget(parent)
+
 {
-    setStyleSheet("QWidget{border:1px solid black; background-color:black;}");
+  setStyleSheet("QWidget{border:1px solid black; background-color:black;}");
 }
 
-void FrameWidget::setFrame(const cv::Mat& bgr)
-{
-    if (bgr.empty() || bgr.type() != CV_8UC3) {
-        spdlog::warn("PlayerWidget::setFrame received invalid mat");
-        return;
-    }
-
-    // 创建 RGB QImage 然后交换 R 和 B 通道
-    m_image = QImage(
-        bgr.data, bgr.cols, bgr.rows, bgr.step,
-        QImage::Format_RGB888
-    ).rgbSwapped().copy();   // 先交换通道再深拷贝
-
-    update();   // 触发 Qt 重绘
+void FrameWidget::setFrame(const QImage &frame) {
+  m_image = frame; 
+  update();               
 }
 
+void FrameWidget::setBarcodeResult(const FrameResult &r) {
+  m_barcodeResult = r;
+  update(); 
+}
 
-void FrameWidget::paintEvent(QPaintEvent *event)
-{
+void FrameWidget::clear() {
+  m_image = QImage();
+  update();
+}
+void FrameWidget::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event);
-
     QPainter painter(this);
     painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-    // 绘制背景（保持 Qt 的 style 支持）
+    // 绘制背景
     QStyleOption opt;
     opt.init(this);
     style()->drawPrimitive(QStyle::PE_Widget, &opt, &painter, this);
 
-    // 没有图像直接返回
     if (m_image.isNull())
         return;
 
-    // 自动等比缩放并居中
+    // 绘制视频帧
     QRect dst = scaleKeepAspect(rect(), m_image.width(), m_image.height());
-
     painter.drawImage(dst, m_image);
-}
 
+    // 绘制二维码四边形
+    if (!m_barcodeResult.points.isEmpty()) {
+        painter.setPen(QPen(Qt::green, 2));
 
-void FrameWidget::clear()
-{
-    m_image = QImage(); // 清空图像
-    update();           // 触发重绘
+        float scaleX = float(dst.width()) / float(m_image.width());
+        float scaleY = float(dst.height()) / float(m_image.height());
+
+        QPolygonF poly;
+        for (auto &pt : m_barcodeResult.points) {
+            poly << QPointF(dst.left() + pt.x() * scaleX,
+                            dst.top()  + pt.y() * scaleY);
+        }
+
+        painter.drawPolygon(poly);
+        painter.setPen(QPen(Qt::black, 3));
+        painter.drawText(poly.boundingRect().topLeft() + QPointF(0, -2),
+                         m_barcodeResult.content);
+    }
 }
