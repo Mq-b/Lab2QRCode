@@ -1,9 +1,11 @@
-name: build and publish windows
+name: win & ubuntu build and pub
 
 on:
   push:
     branches:
       - master
+    tags:
+      - 'v*'   # 例如 v1.0, v2.0, v2.0.1 等
   pull_request:    
   workflow_dispatch:
 
@@ -16,22 +18,12 @@ jobs:
       BOOST_ROOT: ./boost
     name: windows-latest
     runs-on: windows-2025
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
-
-      # - name: Cache deps
-      #   uses: actions/cache@v4
-      #   id: cache-deps
-      #   with:
-      #     path: |
-      #       deps
-      #       boost
-      #     key: deps-${{ runner.os }}-msvc-5.12.12-1.80.0
 
       - name: Setup MSVC Developer Command Prompt
         uses: TheMrMilchmann/setup-msvc-dev@v4
@@ -170,7 +162,8 @@ jobs:
 
   ubuntu-build:
     env:
-      release_exe: build/Release/bin/Lab2QRCode
+      release_file: build/Release/bin/Lab2QRCode
+      release_name: Lab2QRCode
       release_dir: build/Release/bin/
       release_zip: Lab2QRCode-linux.tar.gz
 
@@ -212,21 +205,37 @@ jobs:
           # 构建项目
           cmake --build build --parallel
 
-          # 打包 release
-          Compress-Archive -Path "${{ env.release_dir }}\*" -DestinationPath "${{ env.release_zip }}"
+      # 部署工具
+      - name: Install LinuxDeploy
+        id: install-linuxdeploy
+        uses: miurahr/install-linuxdeploy-action@v1.8.0
+        with:
+          plugins: qt appimage
+
+      - name: Create application dir
+        run: |
+          mkdir -p appdir/usr/bin
+          ${{ steps.install-linuxdeploy.outputs.linuxdeploy }} \
+            --output appimage \
+            --executable ${{ env.release_file }} \
+            --appdir appdir \
+            --icon-file images/Lab2QRCode.png \
+            --create-desktop-file
+          
+          mv *.AppImage ${{ env.release_name }}.AppImage
 
       # ---- Upload Build Artifacts ----
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-build
-          path: ${{ env.release_dir }}
+          name: linux-x64-appimage
+          path: ${{ env.release_name }}.AppImage
 
       # ---- Publish Release (only when tag) ----
       - name: Upload Release Asset
         if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.release_zip }}
+          files: ${{ env.release_name }}.AppImage
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
