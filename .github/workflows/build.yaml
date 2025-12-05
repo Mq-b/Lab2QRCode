@@ -1,4 +1,4 @@
-name: win & ubuntu build and pub
+name: Cross-Platform CI
 
 on:
   push:
