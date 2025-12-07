@@ -292,6 +292,7 @@ void CameraWidget::startCamera(int camIndex)
                         QMessageBox::warning(this, "错误", "无法从摄像头获取视频帧");
                         cameraStarted = false;
                     }, Qt::QueuedConnection);
+                    return;
                 }
             }
 
