@@ -259,27 +259,50 @@ void CameraWidget::startCamera(int camIndex)
     cameraStarted = true;
     running = true;
     asyncOpenFuture = std::async(std::launch::async, [this, camIndex]() {
-        spdlog::info("Opening VideoCapture index {}", camIndex);
-        auto cap = std::make_unique<cv::VideoCapture>(camIndex);
-        if (!cap->isOpened()) {
-            spdlog::error("Failed to open camera {}", camIndex);
+        static const int args[][3] = {
+            {640, 480, 60},
+            {640, 480, 30},
+            {0, 0, 0},
+        };
+        for (const auto& arg : args) {
+            spdlog::info("Opening VideoCapture index {}", camIndex);
+            auto cap = std::make_unique<cv::VideoCapture>(camIndex);
+            if (!cap->isOpened()) {
+                spdlog::error("Failed to open camera {}", camIndex);
+                QMetaObject::invokeMethod(this, [this]() {
+                    QMessageBox::warning(this, "错误", "无法打开摄像头");
+                    cameraStarted = false;
+                }, Qt::QueuedConnection);
+                return;
+            }
+
+            if (arg[0] != 0) {
+                cap->set(cv::CAP_PROP_FRAME_WIDTH, arg[0]);
+                cap->set(cv::CAP_PROP_FRAME_HEIGHT, arg[1]);
+                cap->set(cv::CAP_PROP_FPS, arg[2]);
+            }
+
+            if (!cap->grab()) {
+                if (arg[0] != 0) {
+                    spdlog::warn("Failed to set camera properties to {}x{}@{}", arg[0], arg[1], arg[2]);
+                    continue;
+                } else {
+                    spdlog::error("Failed to grab frame from camera with default properties");
+                    QMetaObject::invokeMethod(this, [this]() {
+                        QMessageBox::warning(this, "错误", "无法从摄像头获取视频帧");
+                        cameraStarted = false;
+                    }, Qt::QueuedConnection);
+                }
+            }
+
+            this->capture = cap.release();
+
             QMetaObject::invokeMethod(this, [this]() {
-                QMessageBox::warning(this, "错误", "无法打开摄像头");
-                cameraStarted = false;
+                cameraStatusLabel->setText("摄像头已启动");
+                captureThread = std::thread(&CameraWidget::captureLoop, this);
             }, Qt::QueuedConnection);
-            return;
+            break;
         }
-
-        cap->set(cv::CAP_PROP_FRAME_WIDTH, 640);
-        cap->set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-        cap->set(cv::CAP_PROP_FPS, 60);
-
-        this->capture = cap.release();
-
-        QMetaObject::invokeMethod(this, [this]() {
-            cameraStatusLabel->setText("摄像头已启动");
-            captureThread = std::thread(&CameraWidget::captureLoop, this);
-        }, Qt::QueuedConnection);
     });
 }
 
