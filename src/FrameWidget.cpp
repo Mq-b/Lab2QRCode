@@ -6,13 +6,13 @@
 namespace {
 
 // 输入 outer rect 和图像宽高，返回居中等比缩放后的 rect
-QRect scaleKeepAspect(const QRect &outer, int w, int h)
+QRect scaleKeepAspect(const QRect &outer, const int w, const int h)
 {
     if (w <= 0 || h <= 0) return {};
 
     const float outerW = outer.width();
     const float outerH = outer.height();
-    const float imgRatio = float(w) / float(h);
+    const float imgRatio = static_cast<float>(w) / static_cast<float>(h);
     const float viewRatio = outerW / outerH;
 
     int newW, newH;
@@ -48,7 +48,7 @@ void FrameWidget::setFrame(const cv::Mat& bgr)
 
     // 创建 RGB QImage 然后交换 R 和 B 通道
     m_image = QImage(
-        bgr.data, bgr.cols, bgr.rows, bgr.step,
+        bgr.data, bgr.cols, bgr.rows, static_cast<int>(bgr.step),
         QImage::Format_RGB888
     ).rgbSwapped().copy();   // 先交换通道再深拷贝
 
@@ -73,7 +73,7 @@ void FrameWidget::paintEvent(QPaintEvent *event)
         return;
 
     // 自动等比缩放并居中
-    QRect dst = scaleKeepAspect(rect(), m_image.width(), m_image.height());
+    const QRect dst = scaleKeepAspect(rect(), m_image.width(), m_image.height());
 
     painter.drawImage(dst, m_image);
 }

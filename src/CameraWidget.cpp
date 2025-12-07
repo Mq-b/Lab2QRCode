@@ -44,32 +44,43 @@ static const std::vector<std::pair<ZXing::BarcodeFormat, QString>> kBarcodeForma
     { ZXing::BarcodeFormat::DataBarLimited,  "DataBarLimited" },
 };
 
-namespace {
-    
- ZXing::ImageView ImageViewFromMat(const cv::Mat& image)
+/**
+ * @brief 将 cv::Mat 转换为 ZXing::ImageView
+ * @param image 输入的 cv::Mat 图像
+ * @return 转换后的 ZXing::ImageView 对象
+ */
+static ZXing::ImageView ImageViewFromMat(const cv::Mat& image)
 {
     using ZXing::ImageFormat;
-    ImageFormat fmt = ImageFormat::None;
+    auto fmt = ImageFormat::None;
     switch (image.channels()) {
-    case 1: fmt = ImageFormat::Lum; break;
-    case 3: fmt = ImageFormat::BGR; break;
-    case 4: fmt = ImageFormat::BGRA; break;
+        case 1: fmt = ImageFormat::Lum; break;
+        case 3: fmt = ImageFormat::BGR; break;
+        case 4: fmt = ImageFormat::BGRA; break;
+        default: return { nullptr,0,0,ImageFormat::None };
     }
-    if (image.depth() != CV_8U) return {nullptr,0,0,ImageFormat::None};
+    if (image.depth() != CV_8U) 
+        return {nullptr,0,0,ImageFormat::None};
+
     return { image.data, image.cols, image.rows, fmt };
 }
 
- void DrawBarcode(cv::Mat& img, ZXing::Barcode bc)
+/**
+ * @brief 在图像上绘制条码的边界框和文本
+ *
+ * @param img 输入输出图像，绘制条形码的边界框和文本
+ * @param bc 条码对象，包含条码的位置信息和识别的文本
+ */
+static void DrawBarcode(cv::Mat& img, const ZXing::Barcode& bc)
 {
-    auto pos = bc.position();
-    auto cvp = [](ZXing::PointI p) { return cv::Point(p.x, p.y); };
-    std::vector<cv::Point> pts = {cvp(pos[0]), cvp(pos[1]), cvp(pos[2]), cvp(pos[3])};
+    const auto pos = bc.position();
+    const auto cvp = [](ZXing::PointI p) { return cv::Point(p.x, p.y); };
+    const std::vector<cv::Point> pts = {cvp(pos[0]), cvp(pos[1]), cvp(pos[2]), cvp(pos[3])};
     cv::polylines(img, pts, true, CV_RGB(0,255,0));
     cv::putText(img, bc.text(), cvp(pos[3]) + cv::Point(0,20),
                 cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0,255,0));
 }
 
-}
 // 构造函数里枚举摄像头
 CameraWidget::CameraWidget(QWidget* parent)
     : QWidget(parent)
@@ -130,7 +141,7 @@ CameraWidget::CameraWidget(QWidget* parent)
         bool anyChecked = false;
         ZXing::BarcodeFormat mask = ZXing::BarcodeFormat::None;
 
-        for (auto* a : formatActions) {
+        for (const auto* a : formatActions) {
             if (a->isChecked()) {
                 anyChecked = true;
                 mask = static_cast<ZXing::BarcodeFormat>(
@@ -144,18 +155,20 @@ CameraWidget::CameraWidget(QWidget* parent)
         isEnabledScan = anyChecked;
     };
 
-    for (auto* act : formatActions)
+    for (const auto* act : formatActions)
         connect(act, &QAction::toggled, this, updateMask);
 
     // 使用 QCameraInfo 获取可用摄像头，避免 cv::VideoCapture 测试设备卡住
     const auto cameras = QCameraInfo::availableCameras();
+    spdlog::info("Available cameras: {}", cameras.size());
     for (int i = 0; i < cameras.size(); ++i) {
         const auto& camInfo = cameras[i];
+        spdlog::info("Camera {}: {}", i, camInfo.description().toStdString());
         QAction* action = new QAction(camInfo.description(), this);
         action->setData(i);  // 存摄像头索引
         cameraMenu->addAction(action);
-        connect(action, &QAction::triggered, this, [this, action]() {
-            int index = action->data().toInt();
+        connect(action, &QAction::triggered, this, [this, action] {
+            const int index = action->data().toInt();
             currentCameraIndex = index;  // 更新当前摄像头
             onCameraIndexChanged(index); // 切换摄像头
         });
@@ -314,7 +327,7 @@ void CameraWidget::captureLoop()
 void CameraWidget::processFrame(cv::Mat& frame, FrameResult& out) const
 {
     if(!isEnabledScan) return;
-    auto barcodes = ZXing::ReadBarcodes(ImageViewFromMat(frame));
+    const auto barcodes = ZXing::ReadBarcodes(ImageViewFromMat(frame));
     for (auto& bc : barcodes) {
         if (!bc.isValid()) continue;
 

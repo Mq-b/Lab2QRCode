@@ -22,7 +22,7 @@ class MQTTMessageWidget : public QWidget
 
 public:
     explicit MQTTMessageWidget(QWidget* parent = nullptr);
-    void addMessage(const QString& topic, const QByteArray& rawData);
+    void addMessage(const QString& topic, const QByteArray& rawData) const;
 
 public slots:
     void clearMessages();

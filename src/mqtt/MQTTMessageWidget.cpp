@@ -63,7 +63,7 @@ void MQTTMessageWidget::setupUI()
     connect(exportButton, &QPushButton::clicked, this, &MQTTMessageWidget::exportMessages);
 }
 
-void MQTTMessageWidget::addMessage(const QString& topic, const QByteArray& rawData)
+void MQTTMessageWidget::addMessage(const QString& topic, const QByteArray& rawData) const
 {
     const QString timestamp = QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
 
