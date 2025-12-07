@@ -16,6 +16,7 @@
 #include <ZXing/ImageView.h>
 #include <ZXing/MultiFormatWriter.h>
 #include <ZXing/ReadBarcode.h>
+#include <opencv2/opencv.hpp>
 
 /**
  * @namespace convert
