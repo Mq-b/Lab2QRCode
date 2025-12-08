@@ -256,7 +256,7 @@ void CameraWidget::startCamera(int camIndex)
 
     cameraStarted = true;
     running = true;
-    (void)CameraConfig::getSupportedCameraConfigs(camIndex);
+    
     asyncOpenFuture = std::async(std::launch::async, [this, camIndex] {
         spdlog::info("Opening VideoCapture index {}", camIndex);
         #ifdef _WIN32
