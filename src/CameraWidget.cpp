@@ -259,7 +259,11 @@ void CameraWidget::startCamera(int camIndex)
     (void)CameraConfig::getSupportedCameraConfigs(camIndex);
     asyncOpenFuture = std::async(std::launch::async, [this, camIndex] {
         spdlog::info("Opening VideoCapture index {}", camIndex);
-        auto cap = std::make_unique<cv::VideoCapture>(camIndex);
+        #ifdef _WIN32
+                auto cap = std::make_unique<cv::VideoCapture>(camIndex, cv::CAP_DSHOW);
+        #else
+                auto cap = std::make_unique<cv::VideoCapture>(camIndex);
+        #endif
         if (!cap->isOpened()) {
             spdlog::error("Failed to open camera {}", camIndex);
             QMetaObject::invokeMethod(this, [this] {
