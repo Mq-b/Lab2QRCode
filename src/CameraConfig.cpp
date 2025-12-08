@@ -15,7 +15,7 @@ CameraConfig::operator QString() const {
 }
 
 CameraConfig::operator std::string() const {
-    return fmt::format("{}x{} @ {} fps ({})",
+    return std::format("{}x{} @ {} fps ({})",
         width,
         height,
         fps,

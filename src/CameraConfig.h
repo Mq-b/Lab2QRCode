@@ -2,7 +2,7 @@
 
 #include <vector>
 #include <QString>
-#include <fmt/format.h>
+#include <format>
 
 struct CameraConfig {
     int width;
