@@ -14,12 +14,10 @@ set(CMAKE_PREFIX_PATH $ENV{VCPKG_LIB} ${CMAKE_PREFIX_PATH})
 
 set(VERSION_CPP "${CMAKE_SOURCE_DIR}/src/version_info/version.cpp")
 
-add_custom_target(RunPowerShellScript ALL
-    COMMAND ${CMAKE_COMMAND} -E echo "Running PowerShell script..."
-    COMMAND pwsh -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/version_info
-    COMMENT "powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1"
+add_custom_target(GenerateVersionInfo ALL
+    COMMAND ${CMAKE_COMMAND} -D "CMAKE_SOURCE_DIR=${CMAKE_SOURCE_DIR}" -D "OUTPUT_FILE=${VERSION_CPP}" -P ${CMAKE_SOURCE_DIR}/generate_version.cmake
     BYPRODUCTS ${VERSION_CPP}
+    COMMENT "Generating version.cpp using CMake"
 )
 
 
@@ -45,7 +43,7 @@ add_executable(${PROJECT_NAME}
     ${VERSION_CPP}
     "logo.rc"
 )
-add_dependencies(${PROJECT_NAME} RunPowerShellScript)
+add_dependencies(${PROJECT_NAME} GenerateVersionInfo)
 
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
