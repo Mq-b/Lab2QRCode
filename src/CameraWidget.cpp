@@ -11,7 +11,6 @@
 #include <QComboBox>
 #include <QCameraInfo>
 #include <spdlog/spdlog.h>
-#include <QCameraInfo>
 #include <QMenuBar>
 #include <QToolButton>
 #include <magic_enum/magic_enum_format.hpp>
@@ -158,13 +157,11 @@ CameraWidget::CameraWidget(QWidget* parent)
     for (const auto* act : formatActions)
         connect(act, &QAction::toggled, this, updateMask);
 
-    // 使用 QCameraInfo 获取可用摄像头，避免 cv::VideoCapture 测试设备卡住
-    const auto cameras = QCameraInfo::availableCameras();
-    spdlog::info("Available cameras: {}", cameras.size());
-    for (int i = 0; i < cameras.size(); ++i) {
-        const auto& camInfo = cameras[i];
-        spdlog::info("Camera {}: {}", i, camInfo.description().toStdString());
-        QAction* action = new QAction(camInfo.description(), this);
+    const auto cameraDescriptions = CameraConfig::getCameraDescriptions();
+    spdlog::info("Available cameras: {}", cameraDescriptions.size());
+    for (int i = 0; i < cameraDescriptions.size(); ++i) {
+        spdlog::info("Camera {}: {}", i, cameraDescriptions[i].toStdString());
+        QAction* action = new QAction(cameraDescriptions[i], this);
         action->setData(i);  // 存摄像头索引
         cameraMenu->addAction(action);
         connect(action, &QAction::triggered, this, [this, action] {
@@ -173,6 +170,7 @@ CameraWidget::CameraWidget(QWidget* parent)
             onCameraIndexChanged(index); // 切换摄像头
         });
     }
+
     // FrameWidget: 可缩放
     frameWidget = new FrameWidget();
     frameWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -258,25 +256,29 @@ void CameraWidget::startCamera(int camIndex)
 
     cameraStarted = true;
     running = true;
-    asyncOpenFuture = std::async(std::launch::async, [this, camIndex]() {
+    (void)CameraConfig::getSupportedCameraConfigs(camIndex);
+    asyncOpenFuture = std::async(std::launch::async, [this, camIndex] {
         spdlog::info("Opening VideoCapture index {}", camIndex);
         auto cap = std::make_unique<cv::VideoCapture>(camIndex);
         if (!cap->isOpened()) {
             spdlog::error("Failed to open camera {}", camIndex);
-            QMetaObject::invokeMethod(this, [this]() {
+            QMetaObject::invokeMethod(this, [this] {
                 QMessageBox::warning(this, "错误", "无法打开摄像头");
                 cameraStarted = false;
             }, Qt::QueuedConnection);
             return;
         }
+        const auto config = CameraConfig::selectBestCameraConfig(CameraConfig::getSupportedCameraConfigs(camIndex));
+        spdlog::info("Selected Camera Config - Resolution: {}x{}, FPS: {}, Pixel Format: {}",
+            config.width, config.height, config.fps, config.pixelFormat.toStdString());
 
-        cap->set(cv::CAP_PROP_FRAME_WIDTH, 640);
-        cap->set(cv::CAP_PROP_FRAME_HEIGHT, 480);
-        cap->set(cv::CAP_PROP_FPS, 60);
+        cap->set(cv::CAP_PROP_FRAME_WIDTH, config.width);
+        cap->set(cv::CAP_PROP_FRAME_HEIGHT, config.height);
+        cap->set(cv::CAP_PROP_FPS, config.fps);
 
         this->capture = cap.release();
 
-        QMetaObject::invokeMethod(this, [this]() {
+        QMetaObject::invokeMethod(this, [this] {
             cameraStatusLabel->setText("摄像头已启动");
             captureThread = std::thread(&CameraWidget::captureLoop, this);
         }, Qt::QueuedConnection);
@@ -285,7 +287,6 @@ void CameraWidget::startCamera(int camIndex)
 
 void CameraWidget::stopCamera()
 {
-    // ExcelExporter::instance().close();
     frameWidget->clear();
     if (!cameraStarted) return;
     running = false;
@@ -301,6 +302,54 @@ void CameraWidget::stopCamera()
     cameraStatusLabel->setText("摄像头已停止");
 }
 
+void CameraWidget::updateFrame(const FrameResult& r) const
+{
+    // 显示视频帧
+    frameWidget->setFrame(r.frame);
+
+    cameraStatusLabel->setText("摄像头运行中...");
+
+    if (r.hasBarcode) {
+        barcodeStatusLabel->setText("检测到 " + r.type + " 码");
+        barcodeStatusLabel->setStyleSheet("color: green; font-weight: bold;");
+
+        QString resultText = QString("条码类型: %1\n内容: %2\n时间: %3\n------------------------\n")
+            .arg(r.type)
+            .arg(r.content)
+            .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
+
+        // 检查是否与上一条记录相同
+        static QString lastContent;
+        static QString lastType;
+
+        if (r.content == lastContent && r.type == lastType) {
+            barcodeClearTimer->start(3000);
+            return;
+        }
+
+        // 更新上一次的记录
+        lastContent = r.content;
+        lastType = r.type;
+
+
+        QList<QStandardItem*> rowItems;
+        rowItems << new QStandardItem(QDateTime::currentDateTime().toString("hh:mm:ss"));
+        rowItems << new QStandardItem(r.type);
+        rowItems << new QStandardItem(r.content);
+
+        // 设置颜色
+        rowItems[1]->setForeground(Qt::blue); // 类型蓝色
+        resultModel->insertRow(0, rowItems); // 插入到顶部
+
+        // 限制行数
+        if (resultModel->rowCount() > 50) {
+            resultModel->removeRow(50);
+        }
+        // 导出到Excel
+        // ExcelExporter::instance().append(r);
+        barcodeClearTimer->start(3000);
+    }
+}
 
 void CameraWidget::captureLoop()
 {
@@ -318,7 +367,7 @@ void CameraWidget::captureLoop()
         processFrame(frame, result);
         result.frame = frame;
 
-        QMetaObject::invokeMethod(this, [this, result]() { updateFrame(result); }, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this, [this, result] { updateFrame(result); }, Qt::QueuedConnection);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     spdlog::info("Capture thread stopped");
@@ -342,53 +391,4 @@ void CameraWidget::processFrame(cv::Mat& frame, FrameResult& out) const
         out.content = QString::fromStdString(bc.text());
         DrawBarcode(frame, bc);
     }
-}
-
-void CameraWidget::updateFrame(const FrameResult& r) const
-{
-    // 显示视频帧
-    frameWidget->setFrame(r.frame);
-
-    cameraStatusLabel->setText("摄像头运行中...");
-    
-    if (r.hasBarcode) {
-        barcodeStatusLabel->setText("检测到 " + r.type + " 码");
-        barcodeStatusLabel->setStyleSheet("color: green; font-weight: bold;");
-        
-        QString resultText = QString("条码类型: %1\n内容: %2\n时间: %3\n------------------------\n")
-                            .arg(r.type)
-                            .arg(r.content)
-                            .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
-
-        // 检查是否与上一条记录相同
-        static QString lastContent;
-        static QString lastType;
-        
-        if (r.content == lastContent && r.type == lastType) {
-            barcodeClearTimer->start(3000);
-            return;
-        }
-        
-        // 更新上一次的记录
-        lastContent = r.content;
-        lastType = r.type;
-
-
-        QList<QStandardItem*> rowItems;
-        rowItems << new QStandardItem(QDateTime::currentDateTime().toString("hh:mm:ss"));
-        rowItems << new QStandardItem(r.type);
-        rowItems << new QStandardItem(r.content);
-        
-        // 设置颜色
-        rowItems[1]->setForeground(Qt::blue); // 类型蓝色
-        resultModel->insertRow(0, rowItems); // 插入到顶部
-        
-        // 限制行数
-        if (resultModel->rowCount() > 50) {
-            resultModel->removeRow(50);
-        }
-        // 导出到Excel
-        // ExcelExporter::instance().append(r);
-        barcodeClearTimer->start(3000);
-    } 
 }

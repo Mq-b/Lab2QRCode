@@ -10,9 +10,10 @@
 #include <QStatusBar>
 #include <QTextEdit>
 #include <QVBoxLayout>
-#include "FrameWidget.h"
 #include <ZXing/BarcodeFormat.h>
 #include "commondef.h"
+#include "FrameWidget.h"
+#include "CameraConfig.h"
 
 class QHideEvent;
 class QPushButton;
