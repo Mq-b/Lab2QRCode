@@ -7,7 +7,8 @@
  */
 struct FrameResult
 {
-    cv::Mat frame; 
+    cv::Mat frame;
+    cv::Mat rectifiedImage;
     bool hasBarcode = false;
     QString type;
     QString content;

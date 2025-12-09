@@ -37,6 +37,12 @@ find_package(Boost CONFIG REQUIRED COMPONENTS
 )
 find_package(spdlog CONFIG REQUIRED)
 
+find_path(XLSXWRITER_INCLUDE_DIR xlsxwriter.h)
+find_library(XLSXWRITER_LIBRARY NAMES xlsxwriter)
+if(NOT XLSXWRITER_INCLUDE_DIR OR NOT XLSXWRITER_LIBRARY)
+    message(FATAL_ERROR "Could not find xlsxwriter library or include directory")
+endif()
+
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 add_executable(${PROJECT_NAME} 
@@ -60,6 +66,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Boost::random
     spdlog::spdlog_header_only
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${XLSXWRITER_INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${XLSXWRITER_LIBRARY})
 
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD

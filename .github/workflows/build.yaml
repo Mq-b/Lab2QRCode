@@ -89,6 +89,9 @@ jobs:
           cmake --build ../spdlog/build --config Release
           cmake --install ../spdlog/build --prefix "${{ github.workspace }}/deps"
 
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg install libxlsxwriter:x64-windows
 
         # ---------- Configure ----------
       - name: Configure CMake And Build Project
@@ -115,7 +118,9 @@ jobs:
           }
           cmake -S . -B build -G "Ninja" `
             -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_PREFIX_PATH="${env:BOOST_ROOT};${env:QT_ROOT_DIR};./deps"
+            -DCMAKE_PREFIX_PATH="${env:BOOST_ROOT};${env:QT_ROOT_DIR};./deps" `
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake `
+            -DCMAKE_CXX_FLAGS="-D_WIN32_WINNT=0x0601"
 
           cmake --build build --config Release --parallel
 
@@ -183,7 +188,8 @@ jobs:
             qtmultimedia5-dev \
             libboost-all-dev \
             cmake ninja-build build-essential \
-            libopencv-dev libspdlog-dev
+            libopencv-dev libspdlog-dev \
+            libxlsxwriter-dev
 
       # ---- Build ZXing (Linux) ----
       - name: Build zxing-cpp

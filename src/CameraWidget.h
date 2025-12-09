@@ -93,6 +93,15 @@ private:
     void updateFrame(const FrameResult& r) const;
     
     /**
+     * @brief 导出扫描结果为 HTML 文件
+     */
+    void exportResultsToHtml(const QString& filePath);
+    /**
+     * @brief 导出扫描结果为 XLSX 文件
+     */
+    void exportResultsToXlsx(const QString& filePath);
+    
+    /**
      * @brief 摄像头捕获循环函数
      * 
      * 在独立线程中持续捕获摄像头视频帧并进行处理
