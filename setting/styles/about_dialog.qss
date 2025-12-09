@@ -2,7 +2,6 @@ QDialog {
     background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
         stop: 0 #2c3e50, stop: 1 #34495e);
     color: white;
-    font-family: "Consolas", "Microsoft YaHei", sans-serif;
 }
 
 QLabel {

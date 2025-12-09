@@ -1,4 +1,5 @@
 #include "about_dialog.h"
+#include "components/UiConfig.h"
 #include <QApplication>
 #include <QDateTime>
 #include <QDesktopServices>
@@ -121,7 +122,10 @@ void AboutDialog::loadStyleSheet() {
     QFile styleFile("./setting/styles/about_dialog.qss");
     if (styleFile.open(QFile::ReadOnly)) {
         QString styleSheet = QLatin1String(styleFile.readAll());
-        setStyleSheet(styleSheet);
+        // 动态注入全局字体设置，确保字体生效, 为所有组件设置字体
+        QString fontFamily = Ui::getAppFont().family();
+        QString fontStyle = QString("QWidget, QLabel, QPushButton { font-family: \"%1\"; }\n").arg(fontFamily);
+        setStyleSheet(fontStyle + styleSheet);
     } else {
         spdlog::error("not open file ./setting/styles/about_dialog.qss");
     }
