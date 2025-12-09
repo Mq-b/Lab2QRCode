@@ -93,7 +93,7 @@ void Ui::applyFont(QApplication &app, const Ui &ui) {
   fallbackFonts << "Noto Sans CJK SC" << "Source Han Sans SC"
                 << "WenQuanYi Micro Hei" << "Droid Sans Fallback";
 #elif defined(Q_OS_WIN)
-  fallbackFonts << "Microsoft YaHei" << "Segoe UI";
+  fallbackFonts << "Microsoft YaHei UI" << "Microsoft YaHei" << "Segoe UI";
 #elif defined(Q_OS_MACOS)
   fallbackFonts << "PingFang SC" << "Heiti SC";
 #endif
@@ -101,8 +101,9 @@ void Ui::applyFont(QApplication &app, const Ui &ui) {
   // 通用 fallback
   fallbackFonts << "Arial" << "sans-serif";
 
-  // 尝试设置字体并验证
   for (const QString &requestedFont : fallbackFonts) {
+    if (requestedFont.isEmpty()) continue; // 空字符串跳过,让后续的 fallback fonts 能够匹配
+
     font.setFamily(requestedFont);
     font.setBold(ui.isBold());
 
