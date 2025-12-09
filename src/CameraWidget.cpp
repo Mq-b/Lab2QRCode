@@ -19,6 +19,13 @@
 #include <QTimer>
 #include <QStandardItemModel>
 #include <QTableView>
+#include <QBuffer>
+#include <QFile>
+#include <QStandardPaths>
+#include <QDir>
+#include <QFileDialog>
+#include <QToolButton>
+#include <xlsxwriter.h>
 
 static const std::vector<std::pair<ZXing::BarcodeFormat, QString>> kBarcodeFormatList {
     { ZXing::BarcodeFormat::Aztec,           "Aztec" },
@@ -78,6 +85,60 @@ static void DrawBarcode(cv::Mat& img, const ZXing::Barcode& bc)
     cv::polylines(img, pts, true, CV_RGB(0,255,0));
     cv::putText(img, bc.text(), cvp(pos[3]) + cv::Point(0,20),
                 cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(0,255,0));
+}
+
+/**
+ * @brief 将多边形区域修正为矩形图片
+ *        为了不裁剪到条码，增加了一定的边距
+ * @param img 原始图像
+ * @param bc 条码对象，包含条码的位置信息和识别的文本
+ * @return 修正后的矩形图片
+ */
+cv::Mat RectifyPolygonToRect(const cv::Mat& img, const ZXing::Barcode& bc)
+{
+    const auto corners = bc.position();
+    const std::vector<cv::Point2f> barcodeCorners = {
+        cv::Point2f(corners[0].x, corners[0].y),
+        cv::Point2f(corners[1].x, corners[1].y),
+        cv::Point2f(corners[2].x, corners[2].y),
+        cv::Point2f(corners[3].x, corners[3].y)
+    };
+    const auto calcDistance = [](const cv::Point2f& a, const cv::Point2f& b) {
+        cv::Point2f diff = a - b;
+        return std::sqrt(diff.x * diff.x + diff.y * diff.y);
+    };
+    const auto maxSideLength = std::max({
+        calcDistance(barcodeCorners[0], barcodeCorners[1]),
+        calcDistance(barcodeCorners[1], barcodeCorners[2]),
+        calcDistance(barcodeCorners[2], barcodeCorners[3]),
+        calcDistance(barcodeCorners[3], barcodeCorners[0]),
+    });
+    const std::vector<cv::Point2f> rectCorners = {
+        cv::Point2f(0, 0),
+        cv::Point2f(maxSideLength - 1, 0),
+        cv::Point2f(maxSideLength - 1, maxSideLength - 1),
+        cv::Point2f(0, maxSideLength - 1)
+    };
+    const std::vector<cv::Point2f> rectCornersWithMargin = {
+        cv::Point2f(-0.05 * maxSideLength, -0.05 * maxSideLength),
+        cv::Point2f(1.05 * maxSideLength - 1, -0.05 * maxSideLength),
+        cv::Point2f(1.05 * maxSideLength - 1, 1.05 * maxSideLength - 1),
+        cv::Point2f(-0.05 * maxSideLength, 1.05 * maxSideLength - 1)
+    };
+    const auto outputSize = static_cast<int>(maxSideLength * 1.1);
+    const std::vector<cv::Point2f> outputRect = {
+        cv::Point2f(0, 0),
+        cv::Point2f(outputSize - 1, 0),
+        cv::Point2f(outputSize - 1, outputSize - 1),
+        cv::Point2f(0, outputSize - 1)
+    };
+    cv::Mat toBarcodeTransform = cv::getPerspectiveTransform(rectCorners, barcodeCorners);
+    std::vector<cv::Point2f> marginBarcodeCorners(4);
+    cv::perspectiveTransform(rectCornersWithMargin, marginBarcodeCorners, toBarcodeTransform);
+    cv::Mat toOutputRectTransform = cv::getPerspectiveTransform(marginBarcodeCorners, outputRect);
+    cv::Mat rectifiedImage;
+    cv::warpPerspective(img, rectifiedImage, toOutputRectTransform, cv::Size(outputSize, outputSize));
+    return rectifiedImage;
 }
 
 // 构造函数里枚举摄像头
@@ -181,8 +242,8 @@ CameraWidget::CameraWidget(QWidget* parent)
     mainLayout->addWidget(frameWidget, 1);
 
     {
-        resultModel = new QStandardItemModel(0, 4, this); // 行，列
-        resultModel->setHorizontalHeaderLabels({"时间", "类型", "内容", "状态"});
+        resultModel = new QStandardItemModel(0, 7, this); // 行，列
+        resultModel->setHorizontalHeaderLabels({"时间", "图像", "类型", "内容", "[隐藏] PNG 数据", "[隐藏] 图片宽度", "[隐藏] 图片高度"});
 
         resultDisplay = new QTableView(this);
         resultDisplay->setModel(resultModel);
@@ -190,10 +251,14 @@ CameraWidget::CameraWidget(QWidget* parent)
         resultDisplay->setSelectionBehavior(QAbstractItemView::SelectRows);
         resultDisplay->setEditTriggers(QAbstractItemView::NoEditTriggers);
         resultDisplay->verticalHeader()->setVisible(false); // 隐藏行号
+        resultDisplay->setColumnHidden(4, true); // 隐藏 PNG 数据列
+        resultDisplay->setColumnHidden(5, true); // 隐藏 图片宽度 列
+        resultDisplay->setColumnHidden(6, true); // 隐藏 图片高度 列
         // 或者使用比例方式
         resultDisplay->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Fixed); // 时间固定
-        resultDisplay->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed); // 类型固定
-        resultDisplay->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch); // 内容拉伸
+        resultDisplay->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Fixed); // 图像固定
+        resultDisplay->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Fixed); // 类型固定
+        resultDisplay->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch); // 内容拉伸
 
         resultDisplay->setAlternatingRowColors(true);
         mainLayout->addWidget(resultDisplay);
@@ -221,6 +286,36 @@ CameraWidget::CameraWidget(QWidget* parent)
         connect(barcodeClearTimer, &QTimer::timeout, this, [this]() {
             barcodeStatusLabel->clear();
             barcodeStatusLabel->setStyleSheet("");
+        });
+
+        // 导出按钮（HTML / XLSX）
+        QToolButton* exportButton = new QToolButton(this);
+        exportButton->setText("导出");
+        QMenu* exportMenu = new QMenu(exportButton);
+        QAction* exportHtmlAction = new QAction("导出 HTML (.html)", exportMenu);
+        QAction* exportXlsxAction = new QAction("导出 XLSX (.xlsx)", exportMenu);
+        exportMenu->addAction(exportHtmlAction);
+        exportMenu->addAction(exportXlsxAction);
+        exportButton->setMenu(exportMenu);
+        exportButton->setPopupMode(QToolButton::InstantPopup);
+        statusBar->addPermanentWidget(exportButton);
+
+        connect(exportHtmlAction, &QAction::triggered, this, [this]() {
+            const QString def = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + QDir::separator() + "scan_results.html";
+            const QString path = QFileDialog::getSaveFileName(this, "保存为 HTML (.html)", def, "HTML 文件 (*.html)");
+            if (!path.isEmpty()) {
+                exportResultsToHtml(path);
+                QMessageBox::information(this, "导出完成", "已导出 HTML 文件：\n" + path);
+            }
+        });
+
+        connect(exportXlsxAction, &QAction::triggered, this, [this]() {
+            const QString def = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + QDir::separator() + "scan_results.xlsx";
+            const QString path = QFileDialog::getSaveFileName(this, "保存为 XLSX (.xlsx)", def, "Excel 文件 (*.xlsx)");
+            if (!path.isEmpty()) {
+                exportResultsToXlsx(path);
+                QMessageBox::information(this, "导出完成", "已导出 XLSX 文件：\n" + path);
+            }
         });
     }
     
@@ -345,24 +440,152 @@ void CameraWidget::updateFrame(const FrameResult& r) const
         lastContent = r.content;
         lastType = r.type;
 
-
         QList<QStandardItem*> rowItems;
         rowItems << new QStandardItem(QDateTime::currentDateTime().toString("hh:mm:ss"));
+        QStandardItem* imageItem = new QStandardItem();
+        QImage img = QImage((const uchar*)r.rectifiedImage.data, r.rectifiedImage.cols, r.rectifiedImage.rows, r.rectifiedImage.step, QImage::Format_RGB888).rgbSwapped();
+        QPixmap pixmap = QPixmap::fromImage(img).scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        imageItem->setData(pixmap, Qt::DecorationRole);
+        rowItems << imageItem;
         rowItems << new QStandardItem(r.type);
         rowItems << new QStandardItem(r.content);
+        // 存储 PNG 数据以便导出
+        QByteArray pngData;
+        QBuffer buffer(&pngData);
+        buffer.open(QIODevice::WriteOnly);
+        img.save(&buffer, "PNG");
+        buffer.close();
+        rowItems << new QStandardItem(QString::fromLatin1(pngData.toBase64()));
+        rowItems << new QStandardItem(QString::number(img.width())); // 图片宽度
+        rowItems << new QStandardItem(QString::number(img.height())); // 图片高度
 
         // 设置颜色
-        rowItems[1]->setForeground(Qt::blue); // 类型蓝色
+        rowItems[2]->setForeground(Qt::blue); // 类型蓝色
         resultModel->insertRow(0, rowItems); // 插入到顶部
+        resultDisplay->setRowHeight(0, 128); // 设置行高
+        resultDisplay->setColumnWidth(1, 128); // 设置图片列宽度
 
         // 限制行数
         if (resultModel->rowCount() > 50) {
             resultModel->removeRow(50);
         }
-        // 导出到Excel
-        // ExcelExporter::instance().append(r);
         barcodeClearTimer->start(3000);
     }
+}
+
+void CameraWidget::exportResultsToHtml(const QString& filePath)
+{
+    QString html;
+    html.reserve(4096);
+    html += "<!DOCTYPE html>\n";
+    html += "<html lang=zh-CN><meta charset=UTF-8><meta content='width=device-width,initial-scale=1'name=viewport><title>扫描结果</title><style>body{font-family:'Segoe UI',Aria";
+    html += "l,'Microsoft YaHei',sans-serif;background:#f7f7f7;margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}table{border-colla";
+    html += "pse:separate;border-spacing:0;width:800px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);border-radius:12px;overflow:hidden;margin:40px auto}caption{font-si";
+    html += "ze:1.5em;font-weight:700;padding:18px 0 10px 0;color:#333;background:#f0f4fa;border-bottom:1px solid #eaeaea}thead th{background:#f0f4fa;color:#333;font-weight:600";
+    html += ";padding:14px 10px;border-bottom:2px solid #eaeaea;text-align:center}tbody td{padding:12px 10px;border-bottom:1px solid #f0f0f0;text-align:center;color:#444}tbody ";
+    html += "tr:last-child td{border-bottom:none}tbody tr{transition:background .2s}tbody tr:hover{background:#eaf6ff}tbody img{max-width:60px;max-height:60px;border-radius:6px";
+    html += ";box-shadow:0 1px 4px rgba(0,0,0,.07);background:#fafafa;border:1px solid #eaeaea}#preview{position:fixed;display:none;z-index:9999;border:2px solid #eaeaea;backgr";
+    html += "ound:#fff;box-shadow:0 4px 24px rgba(0,0,0,.18);border-radius:10px;overflow:hidden}#preview img{max-width:400px;max-height:400px;display:block}</style><table><capt";
+    html += "ion>扫描结果<thead><tr><th>时间<th>图像<th>类型<th>内容<tbody>";
+
+    for (int r = 0; r < resultModel->rowCount(); r++) {
+        const int row = r + 1;
+        const auto getText = [&](int c) -> QString {
+            QStandardItem* it = resultModel->item(r, c);
+            QString text = it ? it->text() : QString("");
+            text.replace("&", "&amp;");
+            text.replace("<", "&lt;");
+            text.replace(">", "&gt;");
+            text.replace("\"", "&quot;");
+            text.replace("'", "&#39;");
+            return text;
+        };
+        html += "<tr>";
+        html += "<td>" + getText(0) + "</td>";
+        html += "<td>";
+        if (QStandardItem* imgItem = resultModel->item(r, 4); imgItem) {
+            html += "<img src=\"data:image/png;base64," + imgItem->text() + "\" width=\"128\" />";
+        }
+        html += "</td>";
+        html += "<td>" + getText(2) + "</td>";
+        html += "<td>" + getText(3) + "</td>";
+        html += "</tr>";
+    }
+
+    html += "</tbody></table><div id='preview'><img /></div><script>const preview=document.getElementById('preview');document.querySelectorAll('tbody img').forEach(e=>{e.addEvent";
+    html += "Listener('mouseenter',function(t){let i=e.getAttribute('src'),l=preview.querySelector('img');l.src=i,preview.style.display='block',preview.style.left=t.clientX+20+'p";
+    html += "x',preview.style.top=t.clientY+'px'}),e.addEventListener('mousemove',function(e){preview.style.left=e.clientX+20+'px',preview.style.top=e.clientY+'px'}),e.addEventLi";
+    html += "stener('mouseleave',function(){preview.style.display='none'})});</script></body></html>";
+
+    QFile f(filePath);
+    if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        spdlog::error("Failed to open export file {}", filePath.toStdString());
+        return;
+    }
+    f.write(html.toUtf8());
+    f.close();
+    spdlog::info("Exported scan results to {}", filePath.toStdString());
+}
+
+void CameraWidget::exportResultsToXlsx(const QString& filePath)
+{
+    lxw_workbook  *workbook  = workbook_new(filePath.toStdString().c_str());
+    if (!workbook) {
+        spdlog::error("Failed to create workbook {}", filePath.toStdString());
+        return;
+    }
+    lxw_format *center_format = workbook_add_format(workbook);
+    format_set_align(center_format, LXW_ALIGN_CENTER);
+    format_set_align(center_format, LXW_ALIGN_VERTICAL_CENTER);
+    format_set_shrink(center_format);
+    lxw_format *center_wrap_format = workbook_add_format(workbook);
+    format_set_align(center_wrap_format, LXW_ALIGN_CENTER);
+    format_set_align(center_wrap_format, LXW_ALIGN_VERTICAL_CENTER);
+    format_set_text_wrap(center_wrap_format);
+    lxw_worksheet *worksheet = workbook_add_worksheet(workbook, "扫描结果");
+
+    worksheet_set_column(worksheet, 0, 0, 9, center_format);
+    worksheet_set_column_pixels(worksheet, 1, 1, 150, center_format);
+    worksheet_set_column(worksheet, 2, 2, 9, center_format);
+    worksheet_set_column(worksheet, 3, 3, 120, center_wrap_format);
+
+    worksheet_write_string(worksheet, 0, 0, "时间", center_format);
+    worksheet_write_string(worksheet, 0, 1, "图像", center_format);
+    worksheet_write_string(worksheet, 0, 2, "类型", center_format);
+    worksheet_write_string(worksheet, 0, 3, "内容", center_format);
+
+    for (int r = 0; r < resultModel->rowCount(); r++) {
+        const int row = r + 1;
+        const auto getText = [&](int c)->std::string {
+            QStandardItem* it = resultModel->item(r, c);
+            return it ? it->text().toStdString() : std::string();
+        };
+
+        worksheet_set_row_pixels(worksheet, row, 150, NULL);
+
+        const auto t0 = getText(0);
+        const auto t1 = getText(2);
+        const auto t2 = getText(3);
+
+        worksheet_write_string(worksheet, row, 0, t0.c_str(), NULL);
+        worksheet_write_string(worksheet, row, 2, t1.c_str(), NULL);
+        worksheet_write_string(worksheet, row, 3, t2.c_str(), NULL);
+
+        if (QStandardItem* imgItem = resultModel->item(r, 4); imgItem) {
+            QString base64Data = imgItem->text();
+            QByteArray ba = QByteArray::fromBase64(base64Data.toLatin1());
+            const int imgWidth = std::stoi(getText(5));
+            const int imgHeight = std::stoi(getText(6));
+            lxw_image_options options = {
+                .x_scale = 150.0 / imgWidth,
+                .y_scale = 150.0 / imgHeight,
+            };
+            worksheet_insert_image_buffer_opt(worksheet, row, 1, (const unsigned char *)ba.constData(), ba.size(), &options);
+        }
+    }
+
+    workbook_close(workbook);
+    spdlog::info("Exported XLSX to {}", filePath.toStdString());
 }
 
 void CameraWidget::captureLoop()
@@ -403,6 +626,7 @@ void CameraWidget::processFrame(cv::Mat& frame, FrameResult& out) const
         out.hasBarcode = true;
         out.type = QString::fromStdString(ZXing::ToString(bc.format()));
         out.content = QString::fromStdString(bc.text());
+        out.rectifiedImage = RectifyPolygonToRect(frame, bc);
         DrawBarcode(frame, bc);
     }
 }
