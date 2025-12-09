@@ -1,4 +1,5 @@
 #include "BarcodeWidget.h"
+#include "components/UiConfig.h"
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFileDialog>
@@ -124,8 +125,7 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     toolsMenu = menuBar->addMenu("工具");
     settingMenu = menuBar->addMenu("设置");
 
-    QFont menuFont("Arial", 12);
-    menuBar->setFont(menuFont);
+    menuBar->setFont(Ui::getAppFont(12));
 
     aboutAction = new QAction("关于软件", this);
     debugMqttAction = new QAction("MQTT实时消息监控窗口", this);
@@ -163,13 +163,13 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     auto* fileLayout = new QHBoxLayout();
     filePathEdit     = new QLineEdit(this);
     filePathEdit->setPlaceholderText("选择一个文件或图片");
-    filePathEdit->setFont(QFont("Arial", 14));
+    filePathEdit->setFont(Ui::getAppFont(14));
     filePathEdit->setStyleSheet(
         "QLineEdit { border: 1px solid #ccc; border-radius: 5px; padding: 5px; background-color: #f9f9f9; }");
 
     QPushButton* browseButton = new QPushButton("浏览", this);
     browseButton->setFixedWidth(100);
-    browseButton->setFont(QFont("Arial", 16));
+    browseButton->setFont(Ui::getAppFont(16));
     browseButton->setStyleSheet(
         "QPushButton { background-color: #4CAF50; color: white; border-radius: 5px; padding: 10px; }"
         "QPushButton:disabled { background-color: #ddd; }");
@@ -185,9 +185,9 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     generateButton->setFixedHeight(40);
     saveButton->setFixedHeight(40);
     decodeToChemFile->setFixedHeight(40);
-    generateButton->setFont(QFont("Consolas", 16));
-    decodeToChemFile->setFont(QFont("Consolas", 16));
-    saveButton->setFont(QFont("Consolas", 16));
+    generateButton->setFont(Ui::getAppFont(16));
+    decodeToChemFile->setFont(Ui::getAppFont(16));
+    saveButton->setFont(Ui::getAppFont(16));
 
     generateButton->setToolTip("请选择任意文件来生成条码");
     decodeToChemFile->setToolTip("可以解码PNG图片中的条码");
@@ -224,7 +224,7 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     auto* comboBoxLayout      = new QHBoxLayout();
 
     QComboBox* formatComboBox = new QComboBox(this);
-    formatComboBox->setFont(QFont("Consolas", 13));
+    formatComboBox->setFont(Ui::getAppFont(13));
 
     for (const auto& item : qAsConst(barcodeFormats)) {
         formatComboBox->addItem(item);
@@ -232,7 +232,7 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     formatComboBox->setCurrentText("QRCode");
 
     QLabel* formatLabel = new QLabel("选择条码类型:", this);
-    formatLabel->setFont(QFont("Consolas", 14));
+    formatLabel->setFont(Ui::getAppFont(14));
     comboBoxLayout->addWidget(formatLabel);
     comboBoxLayout->addWidget(formatComboBox);
     mainLayout->addLayout(comboBoxLayout);
@@ -242,14 +242,14 @@ BarcodeWidget::BarcodeWidget(QWidget* parent) : QWidget(parent) {
     QLabel* widthLabel = new QLabel("宽度:", this);
     widthInput         = new QLineEdit(this);
     widthInput->setText("300"); // 默认宽度
-    widthInput->setFont(QFont("Consolas", 13));
+    widthInput->setFont(Ui::getAppFont(13));
     widthInput->setStyleSheet(
         "QLineEdit { border: 1px solid #ccc; border-radius: 5px; padding: 5px; background-color: #f9f9f9; }");
 
     QLabel* heightLabel = new QLabel("高度:", this);
     heightInput         = new QLineEdit(this);
     heightInput->setText("300"); // 默认高度
-    heightInput->setFont(QFont("Consolas", 13));
+    heightInput->setFont(Ui::getAppFont(13));
     heightInput->setStyleSheet(
         "QLineEdit { border: 1px solid #ccc; border-radius: 5px; padding: 5px; background-color: #f9f9f9; }");
 

@@ -2,6 +2,11 @@
     "mqtt": {
         "host": "127.0.0.1",
         "port": 1883,
-        "client_id": ""
+        "client_id": "123"
+    },
+    "ui": {
+        "font_file": "",
+        "font_family": "",
+        "bold": false
     }
 }
