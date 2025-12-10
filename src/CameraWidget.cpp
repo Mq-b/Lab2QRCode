@@ -28,6 +28,8 @@
 #include <QToolButton>
 #include <xlsxwriter.h>
 
+static const auto HISTOGRAM_CLIP_THRESHOLD = 0.1;
+
 static const std::vector<std::pair<ZXing::BarcodeFormat, QString>> kBarcodeFormatList {
     { ZXing::BarcodeFormat::Aztec,           "Aztec" },
     { ZXing::BarcodeFormat::Codabar,         "Codabar" },
@@ -94,6 +96,7 @@ static void DrawBarcode(cv::Mat& img, const ZXing::Barcode& bc)
  * @param img 原始图像
  * @param bc 条码对象，包含条码的位置信息和识别的文本
  * @param enhance 是否对结果进行图像增强
+ *                如果为 true，则对修正后的图像进行增强处理（对比度拉伸与亮度非线性映射），以提高条码的可读性。
  * @return 修正后的矩形图片
  */
 cv::Mat RectifyPolygonToRect(const cv::Mat& img, const ZXing::Barcode& bc, bool enhance)
@@ -144,15 +147,21 @@ cv::Mat RectifyPolygonToRect(const cv::Mat& img, const ZXing::Barcode& bc, bool 
         return rectifiedImage;
     }
 
-    assert(rectifiedImage.channels() == 3);
+    if (rectifiedImage.channels() == 1) {
+        cv::cvtColor(rectifiedImage, rectifiedImage, cv::COLOR_GRAY2BGR);
+    } else if (rectifiedImage.channels() == 4) {
+        cv::cvtColor(rectifiedImage, rectifiedImage, cv::COLOR_BGRA2BGR);
+    } else if (rectifiedImage.channels() != 3) {
+        return rectifiedImage; // 不支持的通道数，直接返回原图
+    }
 
-    std::vector<int> r_count(256, 0), g_count(256, 0), b_count(256, 0);
+    std::vector<int> bCount(256, 0), gCount(256, 0), rCount(256, 0);
     for (int y = 0; y < rectifiedImage.rows; y++) {
         const auto row = rectifiedImage.ptr<cv::Vec3b>(y);
         for (int x = 0; x < rectifiedImage.cols; x++) {
-            b_count[row[x][0]]++;
-            g_count[row[x][1]]++;
-            r_count[row[x][2]]++;
+            bCount[row[x][0]]++;
+            gCount[row[x][1]]++;
+            rCount[row[x][2]]++;
         }
     }
 
@@ -164,7 +173,7 @@ cv::Mat RectifyPolygonToRect(const cv::Mat& img, const ZXing::Barcode& bc, bool 
         int lo = 0, lo_sum = 0;
         for (int v = 0; v < 256; v++) {
             lo_sum += count[v];
-            if (lo_sum >= total * 0.1) {
+            if (lo_sum >= total * HISTOGRAM_CLIP_THRESHOLD) {
                 lo = v;
                 break;
             }
@@ -172,16 +181,16 @@ cv::Mat RectifyPolygonToRect(const cv::Mat& img, const ZXing::Barcode& bc, bool 
         int hi = 255, hi_sum = 0;
         for (int v = 255; v >= 0; v--) {
             hi_sum += count[v];
-            if (hi_sum >= total * 0.1) {
+            if (hi_sum >= total * HISTOGRAM_CLIP_THRESHOLD) {
                 hi = v;
                 break;
             }
         }
         return {lo, hi};
     };
-    const auto [r_lo, r_hi] = calc_lo_hi(r_count);
-    const auto [g_lo, g_hi] = calc_lo_hi(g_count);
-    const auto [b_lo, b_hi] = calc_lo_hi(b_count);
+    const auto [bLow, bHigh] = calc_lo_hi(bCount);
+    const auto [gLow, gHigh] = calc_lo_hi(gCount);
+    const auto [rLow, rHigh] = calc_lo_hi(rCount);
 
     cv::Mat fimg;
     rectifiedImage.convertTo(fimg, CV_32F);
@@ -193,9 +202,9 @@ cv::Mat RectifyPolygonToRect(const cv::Mat& img, const ZXing::Barcode& bc, bool 
             cv::min(ch, 1.0, ch);
             cv::max(ch, 0.0, ch);
         };
-        norm_clip(channels[0], r_lo, r_hi);
-        norm_clip(channels[1], g_lo, g_hi);
-        norm_clip(channels[2], b_lo, b_hi);
+        norm_clip(channels[0], bLow, bHigh);
+        norm_clip(channels[1], gLow, gHigh);
+        norm_clip(channels[2], rLow, rHigh);
         cv::merge(channels, fimg);
     }
 
@@ -309,10 +318,9 @@ CameraWidget::CameraWidget(QWidget* parent)
 
     QAction* enhanceAction = new QAction("图像增强", this);
     enhanceAction->setCheckable(true);
-    enhanceAction->setChecked(true);
+    enhanceAction->setChecked(isEnhanceEnabled);
     postProcessingMenu->addAction(enhanceAction);
 
-    isEnhanceEnabled = true;
     connect(enhanceAction, &QAction::toggled, this, [this](bool checked) {
         isEnhanceEnabled = checked;
     });

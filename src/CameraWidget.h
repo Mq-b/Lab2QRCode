@@ -63,7 +63,6 @@ protected:
 /**
      * @brief 事件过滤器函数
      * 
-     * 用于捕获特定事件并进行处理，例如清除表格选择状态
      * @param obj 事件目标对象
      * @param event 事件对象
      * @return 如果事件被处理则返回 true，否则返回 false
