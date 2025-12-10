@@ -92,9 +92,10 @@ static void DrawBarcode(cv::Mat& img, const ZXing::Barcode& bc)
  *        为了不裁剪到条码，增加了一定的边距
  * @param img 原始图像
  * @param bc 条码对象，包含条码的位置信息和识别的文本
+ * @param enhance 是否对结果进行图像增强
  * @return 修正后的矩形图片
  */
-cv::Mat RectifyPolygonToRect(const cv::Mat& img, const ZXing::Barcode& bc)
+cv::Mat RectifyPolygonToRect(const cv::Mat& img, const ZXing::Barcode& bc, bool enhance)
 {
     const auto corners = bc.position();
     const std::vector<cv::Point2f> barcodeCorners = {
@@ -138,7 +139,73 @@ cv::Mat RectifyPolygonToRect(const cv::Mat& img, const ZXing::Barcode& bc)
     cv::Mat toOutputRectTransform = cv::getPerspectiveTransform(marginBarcodeCorners, outputRect);
     cv::Mat rectifiedImage;
     cv::warpPerspective(img, rectifiedImage, toOutputRectTransform, cv::Size(outputSize, outputSize));
-    return rectifiedImage;
+    if (!enhance) {
+        return rectifiedImage;
+    }
+
+    assert(rectifiedImage.channels() == 3);
+
+    std::vector<int> r_count(256, 0), g_count(256, 0), b_count(256, 0);
+    for (int y = 0; y < rectifiedImage.rows; y++) {
+        const auto row = rectifiedImage.ptr<cv::Vec3b>(y);
+        for (int x = 0; x < rectifiedImage.cols; x++) {
+            b_count[row[x][0]]++;
+            g_count[row[x][1]]++;
+            r_count[row[x][2]]++;
+        }
+    }
+
+    const auto calc_lo_hi = [](const std::vector<int>& count) -> std::pair<int, int> {
+        int total = 0;
+        for (int v = 0; v < 256; v++) {
+            total += count[v];
+        }
+        int lo = 0, lo_sum = 0;
+        for (int v = 0; v < 256; v++) {
+            lo_sum += count[v];
+            if (lo_sum >= total * 0.1) {
+                lo = v;
+                break;
+            }
+        }
+        int hi = 255, hi_sum = 0;
+        for (int v = 255; v >= 0; v--) {
+            hi_sum += count[v];
+            if (hi_sum >= total * 0.1) {
+                hi = v;
+                break;
+            }
+        }
+        return {lo, hi};
+    };
+    const auto [r_lo, r_hi] = calc_lo_hi(r_count);
+    const auto [g_lo, g_hi] = calc_lo_hi(g_count);
+    const auto [b_lo, b_hi] = calc_lo_hi(b_count);
+
+    cv::Mat fimg;
+    rectifiedImage.convertTo(fimg, CV_32F);
+    {
+        std::vector<cv::Mat> channels(3);
+        cv::split(fimg, channels);
+        const auto norm_clip = [](cv::Mat& ch, int lo, int hi) {
+            ch = (ch - lo) / (hi - lo);
+            cv::min(ch, 1.0, ch);
+            cv::max(ch, 0.0, ch);
+        };
+        norm_clip(channels[0], r_lo, r_hi);
+        norm_clip(channels[1], g_lo, g_hi);
+        norm_clip(channels[2], b_lo, b_hi);
+        cv::merge(channels, fimg);
+    }
+
+    cv::Mat mat1;
+    cv::pow(fimg, 2, mat1);
+    cv::Mat mat2;
+    cv::pow(fimg, 3, mat2);
+    cv::Mat enhanced;
+    cv::Mat(3 * mat1 - 2 * mat2).convertTo(enhanced, CV_8U, 255.0);
+
+    return enhanced;
 }
 
 // 构造函数里枚举摄像头
@@ -235,6 +302,18 @@ CameraWidget::CameraWidget(QWidget* parent)
             onCameraIndexChanged(index); // 切换摄像头
         });
     }
+
+    QMenu* postProcessingMenu = menuBar->addMenu("后处理");
+
+    QAction* enhanceAction = new QAction("图像增强", this);
+    enhanceAction->setCheckable(true);
+    enhanceAction->setChecked(true);
+    postProcessingMenu->addAction(enhanceAction);
+
+    isEnhanceEnabled = true;
+    connect(enhanceAction, &QAction::toggled, this, [this](bool checked) {
+        isEnhanceEnabled = checked;
+    });
 
     // FrameWidget: 可缩放
     frameWidget = new FrameWidget();
@@ -629,7 +708,7 @@ void CameraWidget::processFrame(cv::Mat& frame, FrameResult& out) const
         out.hasBarcode = true;
         out.type = QString::fromStdString(ZXing::ToString(bc.format()));
         out.content = QString::fromStdString(bc.text());
-        out.rectifiedImage = RectifyPolygonToRect(frame, bc);
+        out.rectifiedImage = RectifyPolygonToRect(frame, bc, isEnhanceEnabled);
         DrawBarcode(frame, bc);
     }
 }

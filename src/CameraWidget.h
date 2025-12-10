@@ -164,6 +164,7 @@ private:
     QLabel* cameraStatusLabel;                                              /**< 摄像头状态标签 */
     QLabel* barcodeStatusLabel;                                             /**< 条码识别状态标签 */
     QTimer* barcodeClearTimer;                                              /**< 条码状态清除定时器 */
+    bool isEnhanceEnabled = true;                                           /**< 是否启用图像增强 */
 };
 
 #endif // CAMERAWIDGET_H
