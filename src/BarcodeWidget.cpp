@@ -793,9 +793,12 @@ void BarcodeWidget::showAbout() const {
     const QString branch = version::git_branch.data();
     const QString commitTime = version::git_commit_time.data();
     const QString buildTime = version::build_time.data();
+    const QString system_version = version::system_version.data();
+    const QString kernel_version = version::kernel_version.data();
+    const QString architecture = version::architecture.data();
 
     AboutDialog* aboutDialog = new AboutDialog();
-    aboutDialog->setVersionInfo(tag, hash, branch, commitTime, buildTime);
+    aboutDialog->setVersionInfo(tag, hash, branch, commitTime, buildTime, system_version,kernel_version, architecture);
     aboutDialog->exec();
     aboutDialog->deleteLater();
 }

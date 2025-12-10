@@ -18,6 +18,10 @@ $build_time = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId(
     'China Standard Time'
 ).ToString('yyyy-MM-dd HH:mm:ss')
 
+# 获取构建时系统版本、内核版本、架构信息
+$system_version = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription.ToString()
+$kernel_version = [System.Environment]::OSVersion.version.ToString()
+$architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString()
 
 # 生成 version.cpp 文件
 @"
@@ -29,6 +33,9 @@ namespace version{
     constexpr std::string_view git_branch = "$git_branch";
     constexpr std::string_view git_commit_time = "$git_commit_time";
     constexpr std::string_view build_time = "$build_time";
+    constexpr std::string_view system_version = "$system_version";
+    constexpr std::string_view kernel_version = "$kernel_version";
+    constexpr std::string_view architecture = "$architecture";
 };
 "@ | Out-File -Encoding utf8 version.cpp
 

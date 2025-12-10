@@ -15,20 +15,23 @@
 
 AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
     setWindowTitle("关于 Lab2QRCode");
-    setFixedSize(480, 420);
+    setFixedSize(480, 520);
 
     initUI();
     loadStyleSheet();
 }
 
 void AboutDialog::setVersionInfo(const QString& tag, const QString& hash, const QString& branch,
-                                 const QString& commitTime, const QString& buildTime) {
+                                 const QString& commitTime, const QString& buildTime, const QString& systemVersion,
+                                 const QString& kernelVersion, const QString& architecture) {
     m_tag = tag;
     m_hash = hash;
     m_branch = branch;
     m_commitTime = commitTime;
     m_buildTime = buildTime;
-
+    m_systemVersion = systemVersion;
+    m_kernelVersion = kernelVersion;
+    m_architecture = architecture;
     // 更新UI显示版本信息
     QWidget* infoWidget = findChild<QWidget*>("infoWidget");
     if (infoWidget) {
@@ -47,6 +50,9 @@ void AboutDialog::setVersionInfo(const QString& tag, const QString& hash, const 
             addInfoRow(infoLayout, 2, "🌿 代码分支:", m_branch);
             addInfoRow(infoLayout, 3, "⏰ 提交时间:", formatTime(m_commitTime));
             addInfoRow(infoLayout, 4, "🔨 构建时间:", formatTime(m_buildTime));
+            addInfoRow(infoLayout, 5, "🖥️ 系统版本:", formatTime(m_systemVersion));
+            addInfoRow(infoLayout, 6, "⚙️ 内核版本:", formatTime(m_kernelVersion));
+            addInfoRow(infoLayout, 7, "🧩 架构类型:", formatTime(m_architecture));
         }
     }
 }

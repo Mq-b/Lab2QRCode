@@ -22,7 +22,7 @@ class AboutDialog : public QDialog {
 public:
     explicit AboutDialog(QWidget* parent = nullptr);
     void setVersionInfo(const QString& tag, const QString& hash, const QString& branch, const QString& commitTime,
-                        const QString& buildTime);
+                        const QString& buildTime, const QString& systemVersion, const QString& kernelVersion, const QString& architecture);
 
 private slots:
     void onGithubClicked();
@@ -47,6 +47,9 @@ private:
     QString m_branch;
     QString m_commitTime;
     QString m_buildTime;
+    QString m_systemVersion;
+    QString m_kernelVersion;
+    QString m_architecture;
 };
 
 #endif
