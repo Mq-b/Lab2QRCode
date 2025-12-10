@@ -6,6 +6,7 @@
 #include <QMetaObject>
 #include <QDateTime>
 #include <qaction.h>
+#include <qcoreevent.h>
 #include <spdlog/spdlog.h>
 #include <QPushButton>
 #include <QComboBox>
@@ -214,6 +215,7 @@ CameraWidget::CameraWidget(QWidget* parent)
 {
     setWindowTitle("摄像头预览");
     setMinimumSize(800, 600);
+    this->installEventFilter(this);
 
     mainLayout = new QVBoxLayout(this);
     menuBar = new QMenuBar(this);
@@ -340,6 +342,7 @@ CameraWidget::CameraWidget(QWidget* parent)
         resultDisplay->horizontalHeader()->setSectionResizeMode(3, QHeaderView::Stretch); // 内容拉伸
 
         resultDisplay->setAlternatingRowColors(true);
+        resultDisplay->installEventFilter(this);
         mainLayout->addWidget(resultDisplay);
     }
     {
@@ -398,6 +401,16 @@ CameraWidget::CameraWidget(QWidget* parent)
         });
     }
     
+}
+
+bool CameraWidget::eventFilter(QObject* obj, QEvent* event) {
+    if (obj == resultDisplay && event->type() == QEvent::FocusOut) {
+        resultDisplay->clearSelection();
+    }
+    if (obj != resultDisplay && event->type() == QEvent::MouseButtonPress) {
+        resultDisplay->clearFocus();
+    }
+    return QWidget::eventFilter(obj, event);
 }
 
 void CameraWidget::onCameraIndexChanged(int index)
