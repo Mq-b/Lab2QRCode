@@ -106,11 +106,11 @@ private:
     /**
      * @brief 导出扫描结果为 HTML 文件
      */
-    void exportResultsToHtml(const QString& filePath);
+    bool exportResultsToHtml(const QString& filePath);
     /**
      * @brief 导出扫描结果为 XLSX 文件
      */
-    void exportResultsToXlsx(const QString& filePath);
+    bool exportResultsToXlsx(const QString& filePath);
     
     /**
      * @brief 摄像头捕获循环函数

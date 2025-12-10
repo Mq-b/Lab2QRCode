@@ -386,8 +386,11 @@ CameraWidget::CameraWidget(QWidget* parent)
             const QString def = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + QDir::separator() + "scan_results.html";
             const QString path = QFileDialog::getSaveFileName(this, "保存为 HTML (.html)", def, "HTML 文件 (*.html)");
             if (!path.isEmpty()) {
-                exportResultsToHtml(path);
-                QMessageBox::information(this, "导出完成", "已导出 HTML 文件：\n" + path);
+                if (exportResultsToHtml(path)) {
+                    QMessageBox::information(this, "导出完成", "已导出 HTML 文件：\n" + path);
+                } else {
+                    QMessageBox::warning(this, "导出失败", "导出 HTML 文件失败：\n" + path);
+                }
             }
         });
 
@@ -395,8 +398,11 @@ CameraWidget::CameraWidget(QWidget* parent)
             const QString def = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) + QDir::separator() + "scan_results.xlsx";
             const QString path = QFileDialog::getSaveFileName(this, "保存为 XLSX (.xlsx)", def, "Excel 文件 (*.xlsx)");
             if (!path.isEmpty()) {
-                exportResultsToXlsx(path);
-                QMessageBox::information(this, "导出完成", "已导出 XLSX 文件：\n" + path);
+                if (exportResultsToXlsx(path)) {
+                    QMessageBox::information(this, "导出完成", "已导出 XLSX 文件：\n" + path);
+                } else {
+                    QMessageBox::warning(this, "导出失败", "导出 XLSX 文件失败：\n" + path);
+                }
             }
         });
     }
@@ -569,7 +575,7 @@ void CameraWidget::updateFrame(const FrameResult& r) const
     }
 }
 
-void CameraWidget::exportResultsToHtml(const QString& filePath)
+bool CameraWidget::exportResultsToHtml(const QString& filePath)
 {
     QString html;
     html.reserve(4096);
@@ -615,19 +621,20 @@ void CameraWidget::exportResultsToHtml(const QString& filePath)
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {
         spdlog::error("Failed to open export file {}", filePath.toStdString());
-        return;
+        return false;
     }
     f.write(html.toUtf8());
     f.close();
     spdlog::info("Exported scan results to {}", filePath.toStdString());
+    return true;
 }
 
-void CameraWidget::exportResultsToXlsx(const QString& filePath)
+bool CameraWidget::exportResultsToXlsx(const QString& filePath)
 {
     lxw_workbook  *workbook  = workbook_new(filePath.toStdString().c_str());
     if (!workbook) {
         spdlog::error("Failed to create workbook {}", filePath.toStdString());
-        return;
+        return false;
     }
     lxw_format *center_format = workbook_add_format(workbook);
     format_set_align(center_format, LXW_ALIGN_CENTER);
@@ -681,6 +688,7 @@ void CameraWidget::exportResultsToXlsx(const QString& filePath)
 
     workbook_close(workbook);
     spdlog::info("Exported XLSX to {}", filePath.toStdString());
+    return true;
 }
 
 void CameraWidget::captureLoop()
