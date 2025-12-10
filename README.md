@@ -15,37 +15,19 @@
 - ✏️ **手动输入生成条码**：用户可手动输入文本生成条码
 - 📷 **摄像头扫描识别**：支持使用摄像头扫描条码进行识别和解码
 
-### 单文件生成与解码
-
-![单文件生成与解码](images/单文件生成和解码.gif)
-
-
-### 手动输入生成条码
-
-![手动输入生成条码](images/手动输入生成条码.gif)
-
-### 批量文件生成条码
-
-点击浏览按钮后打开目录，可多选文件。
-
-![批量文件生成条码](images/批量生成和解码.gif)
-
-
-解码不在乎条码类型选择的是什么，默认尝试所有 19 种条码进行解码。
+| ![单文件生成与解码](images/单文件生成和解码.gif) | ![手动输入生成条码](images/手动输入生成条码.gif) |                                            ![批量文件生成条码](images/批量生成和解码.gif)                                            |
+|:------------------------------------------------:|:------------------------------------------------:|:------------------------------------------------------------------------------------------------------------------------------------:|
+|               **单文件生成与解码**               |               **手动输入生成条码**               | **批量文件生成条码**<br />点击浏览按钮后打开目录，可多选文件。<br />解码不在乎条码类型选择的是什么，默认尝试所有 19 种条码进行解码。 |
 
 ### 摄像头扫描识别
 
-
-
-https://github.com/user-attachments/assets/d6fbb77c-bed0-4dca-acd7-50650591413e
-
-
+<https://github.com/user-attachments/assets/d6fbb77c-bed0-4dca-acd7-50650591413e>
 
 ## 构建
 
 使用 `cmake` 管理项目，依赖三方库：
 
-- **`Qt5`** - 图形界面
+- [**`Qt5`**](https://doc.qt.io/archives/qt-5.12/) - 图形界面
 - [**`zxing-cpp`**](https://github.com/zxing-cpp/zxing-cpp) - 条码处理核心库
 - [**`OpenCV4`**](https://github.com/opencv/opencv) - 图像处理
 - [**`Boost.Asio`**](https://www.boost.org/doc/libs/master/doc/html/boost_asio.html) - 网络通信
@@ -53,25 +35,94 @@ https://github.com/user-attachments/assets/d6fbb77c-bed0-4dca-acd7-50650591413e
 - [**`nlohmann_json`**](https://github.com/nlohmann/json) - JSON 数据处理
 - [**`mqtt5`**](https://github.com/boostorg/mqtt5) - 消息订阅
 - [**`magic_enum`**](https://github.com/Neargye/magic_enum) - 枚举转字符串
+- [**`xlsxwriter`**](https://github.com/jmcnamara/libxlsxwriter) - Excel 文件写入
 
 使用 Visual Studio 17 或 gcc 工具链构建。
 
 项目还依赖 [`pwsh`](https://github.com/PowerShell/PowerShell/releases/tag/v7.5.4) 终端。
 
-```shell
-# windows 安装
-winget install pwsh
+### Linux
+
+#### 安装 PowerShell
+
+在 Debian 系发行版上，可以使用以下命令安装：
+
+```sh
+curl -O "https://mirrors.pku.edu.cn/debian/pool/main/i/icu/libicu72_72.1-3+deb12u1_amd64.deb"
+sudo dpkg -i libicu72_72.1-3+deb12u1_amd64.deb
+curl -O "https://github.com/PowerShell/PowerShell/releases/download/v7.5.4/powershell_7.5.4-1.deb_amd64.deb"
+sudo dpkg -i powershell_7.5.4-1.deb_amd64.deb
 ```
 
-Linux 安装见[微软文档](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-linux?view=powershell-7.5)。
+其它发行版参照[微软文档](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-linux?view=powershell-7.5)。
 
-```cmake
-git clone https://gitee.com/Mq-b/Lab2QRCode
-mkdir build
-cd build
+#### 安装依赖库
+
+在 Debian 系发行版上，可以使用以下命令安装依赖：
+
+```sh
+sudo apt install qtbase5-dev qt5-qmake qtmultimedia5-dev libboost-all-dev cmake ninja-build build-essential libopencv-dev libspdlog-dev libxlsxwriter-dev libzxing-dev
+```
+
+> 注意：如果是使用了 `clang >= 20` 编译器，则不应该安装 `libfmt-dev` 和 `libspdlog-dev`。
+>
+> 请自行从源码编译 `fmt` 和 `spdlog`，因为它们在新版修复了一个编译问题。
+
+对于其它发行版，请自行安装相应的依赖包。
+
+#### 构建项目
+
+```sh
+git clone https://github.com/Mq-b/Lab2QRCode
+mkdir build && cd build
 cmake ..
 cmake --build . -j --config Release
 ```
+
+构建完成后，在 `build/bin/` 目录下会生成 `Lab2QRCode` 可执行文件。
+
+### Windows
+
+#### 安装 PowerShell
+
+```sh
+winget install pwsh
+```
+
+#### 安装依赖库
+
+可以使用 `vcpkg` 来安装依赖库，具体请自行处理。
+
+`vcpkg` 安装方法如下：
+
+```sh
+git clone https://github.com/microsoft/vcpkg.git
+./vcpkg/bootstrap-vcpkg.bat
+./vcpkg/vcpkg install opencv[core]:x64-windows spdlog:x64-windows libxlsxwriter:x64-windows
+```
+
+> 注意这没有安装 `qt5` `boost` 和 `zxing-cpp`，请自行安装它们。
+
+#### 构建项目
+
+```sh
+git clone https://github.com/Mq-b/Lab2QRCode
+mkdir build && cd build
+cmake ..
+cmake --build . -j --config Release
+```
+
+> 如果你在上一步中安装了 `vcpkg`，请将：
+>
+> ```sh
+> cmake ..
+> ```
+>
+> 替换为：
+>
+> ```sh
+> cmake .. -DCMAKE_TOOLCHAIN_FILE="../vcpkg/scripts/buildsystems/vcpkg.cmake"
+> ```
 
 构建完成后，在 `build\Release\bin\` 目录下会生成 `Lab2QRCode.exe` 可执行文件。
 
@@ -79,28 +130,28 @@ cmake --build . -j --config Release
 
 Lab2QRCode 支持以下多种条码格式的生成和识别：
 
-| 条码类型 | 格式名称 | 类别 | 特点 |
-|---------|----------|------|------|
-| **QR Code** | QRCode | 二维码 | 高容量、快速读取 |
-| **Micro QR Code** | MicroQRCode | 二维码 | 小型QR码变体 |
-| **rMQR Code** | RMQRCode | 二维码 | 矩形微QR码 |
-| **Aztec Code** | Aztec | 二维码 | 不需要留白边 |
-| **Data Matrix** | DataMatrix | 二维码 | 小尺寸标识 |
-| **PDF417** | PDF417 | 二维码 | 堆叠式线性码 |
-| **MaxiCode** | MaxiCode | 二维码 | 货运包裹使用 |
-| **EAN-13** | EAN13 | 一维码 | 商品零售 |
-| **EAN-8** | EAN8 | 一维码 | 小型商品 |
-| **UPC-A** | UPCA | 一维码 | 北美商品 |
-| **UPC-E** | UPCE | 一维码 | UPC压缩格式 |
-| **Code 128** | Code128 | 一维码 | 高密度字符集 |
-| **Code 39** | Code39 | 一维码 | 字母数字支持 |
-| **Code 93** | Code93 | 一维码 | Code39增强版 |
-| **Codabar** | Codabar | 一维码 | 血库、图书馆 |
-| **ITF** | ITF | 一维码 | 交插二五码 |
-| **DataBar** | DataBar | 一维码 | 原RSS码 |
-| **DataBar Expanded** | DataBarExpanded | 一维码 | 扩展数据容量 |
-| **DataBar Limited** | DataBarLimited | 一维码 | 有限字符集 |
-| **DX Film Edge** | DXFilmEdge | 一维码 | 电影胶片边码 |
+| 条码类型             | 格式名称        | 类别   | 特点             |
+|----------------------|-----------------|--------|------------------|
+| **QR Code**          | QRCode          | 二维码 | 高容量、快速读取 |
+| **Micro QR Code**    | MicroQRCode     | 二维码 | 小型QR码变体     |
+| **rMQR Code**        | RMQRCode        | 二维码 | 矩形微QR码       |
+| **Aztec Code**       | Aztec           | 二维码 | 不需要留白边     |
+| **Data Matrix**      | DataMatrix      | 二维码 | 小尺寸标识       |
+| **PDF417**           | PDF417          | 二维码 | 堆叠式线性码     |
+| **MaxiCode**         | MaxiCode        | 二维码 | 货运包裹使用     |
+| **EAN-13**           | EAN13           | 一维码 | 商品零售         |
+| **EAN-8**            | EAN8            | 一维码 | 小型商品         |
+| **UPC-A**            | UPCA            | 一维码 | 北美商品         |
+| **UPC-E**            | UPCE            | 一维码 | UPC压缩格式      |
+| **Code 128**         | Code128         | 一维码 | 高密度字符集     |
+| **Code 39**          | Code39          | 一维码 | 字母数字支持     |
+| **Code 93**          | Code93          | 一维码 | Code39增强版     |
+| **Codabar**          | Codabar         | 一维码 | 血库、图书馆     |
+| **ITF**              | ITF             | 一维码 | 交插二五码       |
+| **DataBar**          | DataBar         | 一维码 | 原RSS码          |
+| **DataBar Expanded** | DataBarExpanded | 一维码 | 扩展数据容量     |
+| **DataBar Limited**  | DataBarLimited  | 一维码 | 有限字符集       |
+| **DX Film Edge**     | DXFilmEdge      | 一维码 | 电影胶片边码     |
 
 ## 数据完整性保障
 
