@@ -2,14 +2,13 @@
 #include <QWidget>
 #include <opencv2/core.hpp>
 
-
 /**
  * @class FrameWidget
  * @brief 用于显示视频帧的自定义 QWidget
  */
 class FrameWidget : public QWidget {
     Q_OBJECT
-public:
+  public:
     explicit FrameWidget(QWidget *parent = nullptr);
 
     /**
@@ -18,9 +17,10 @@ public:
      * @param bgr 输入的 BGR 格式图像
      */
     void setFrame(const cv::Mat &bgr);
-    
+
     void clear();
-protected:
+
+  protected:
     /**
      * @brief 重写绘制事件以显示视频帧
      * 
@@ -28,6 +28,6 @@ protected:
      */
     void paintEvent(QPaintEvent *event) override;
 
-private:
-    QImage m_image;      // 转换后的图像
+  private:
+    QImage m_image; // 转换后的图像
 };

@@ -7,10 +7,10 @@
 #include <opencv2/opencv.hpp>
 #include <qfuturewatcher.h>
 
-#include "convert.h"
-#include "mqtt/mqtt_client.h"
-#include "mqtt/MQTTMessageWidget.h"
 #include "CameraWidget.h"
+#include "convert.h"
+#include "mqtt/MQTTMessageWidget.h"
+#include "mqtt/mqtt_client.h"
 
 class QLineEdit;
 class QPushButton;
@@ -31,18 +31,18 @@ class QMenuBar;
 class BarcodeWidget : public QWidget {
     Q_OBJECT
 
-public:
+  public:
     /**
      * @brief 构造函数，初始化窗口和控件布局。
      *
      * @param parent 父窗口指针，默认为空指针。
      */
-    explicit BarcodeWidget(QWidget* parent = nullptr);
+    explicit BarcodeWidget(QWidget *parent = nullptr);
 
-private:
+  private:
     static const QStringList barcodeFormats;
 
-signals:
+  signals:
     /**
      * @brief MQTT 消息接收信号
      * @param topic 接收到消息的主题(Topic)路径
@@ -51,9 +51,9 @@ signals:
      * @details
      * 当客户端订阅的 MQTT 主题有消息到达时，会触发此信号。
      */
-    void mqttMessageReceived(const QString& topic, const QByteArray& payload);
+    void mqttMessageReceived(const QString &topic, const QByteArray &payload);
 
-private slots:
+  private slots:
     /**
      * @brief 更新按钮状态，是否可点击
      *
@@ -93,7 +93,7 @@ private slots:
     /**
      * @brief 将 OpenCV 中的 Mat 对象转换为 QImage 格式。
      */
-    QImage MatToQImage(const cv::Mat& mat) const;
+    QImage MatToQImage(const cv::Mat &mat) const;
 
     /**
     * @brief 渲染并显示结果
@@ -104,7 +104,7 @@ private slots:
     * @brief 批处理完成回调函数
     * @param watcher 异步任务监视器
     */
-    void onBatchFinish(QFutureWatcher<convert::result_data_entry>& watcher);
+    void onBatchFinish(QFutureWatcher<convert::result_data_entry> &watcher);
 
     /**
      * @brief 将条码格式枚举转换为字符串表示。
@@ -120,37 +120,35 @@ private slots:
      * @param formatStr 条码格式的字符串表示。
      * @return 对应的条码格式枚举值。
      */
-    static ZXing::BarcodeFormat stringToBarcodeFormat(const QString& formatStr);
+    static ZXing::BarcodeFormat stringToBarcodeFormat(const QString &formatStr);
 
-private:
+  private:
+    QStringList lastSelectedFiles; /**< 上次选择的文件路径列表 */
 
-    QStringList lastSelectedFiles;                                            /**< 上次选择的文件路径列表 */
-                                                                              
-    QMenuBar* menuBar;                                                        /**< 主菜单栏 */
-    QMenu* helpMenu;                                                          /**< 帮助菜单 */
-    QMenu* toolsMenu;                                                         /**< 工具菜单 */
-    QMenu* settingMenu;                                                       /**< 设置菜单 */
-                                                                              
-    QAction* aboutAction;                                                     /**< "关于"操作 */
-    QAction* debugMqttAction;                                                 /**< 打开MQTT消息展示窗口 */
-    QAction* openCameraScanAction;                                            /**< 启动摄像头扫描条码 */
-    QAction* base64CheckAcion;                                                /**< 启用Base64编码/解码 */
-    QAction* directTextAction;                                                /**< 启用文本输入*/
-                                                                              
-    QLineEdit* filePathEdit;                                                  /**< 文件路径输入框 */
-    QPushButton* generateButton;                                              /**< 生成条码按钮 */
-    QPushButton* decodeToChemFile;                                            /**< 解码并保存为化验文件 */
-    QPushButton* saveButton;                                                  /**< 保存条码图片按钮 */
-    QProgressBar* progressBar;                                                /**< 异步进度条 */
+    QMenuBar *menuBar;  /**< 主菜单栏 */
+    QMenu *helpMenu;    /**< 帮助菜单 */
+    QMenu *toolsMenu;   /**< 工具菜单 */
+    QMenu *settingMenu; /**< 设置菜单 */
+
+    QAction *aboutAction;          /**< "关于"操作 */
+    QAction *debugMqttAction;      /**< 打开MQTT消息展示窗口 */
+    QAction *openCameraScanAction; /**< 启动摄像头扫描条码 */
+    QAction *base64CheckAcion;     /**< 启用Base64编码/解码 */
+    QAction *directTextAction;     /**< 启用文本输入*/
+
+    QLineEdit *filePathEdit;                                                  /**< 文件路径输入框 */
+    QPushButton *generateButton;                                              /**< 生成条码按钮 */
+    QPushButton *decodeToChemFile;                                            /**< 解码并保存为化验文件 */
+    QPushButton *saveButton;                                                  /**< 保存条码图片按钮 */
+    QProgressBar *progressBar;                                                /**< 异步进度条 */
     std::vector<convert::result_data_entry> lastResults;                      /**< 上次解码结果 */
-    QScrollArea* scrollArea;                                                  /**< 滚动区域 */
-    QComboBox* formatComboBox;                                                /**< 条码格式选择框 */
+    QScrollArea *scrollArea;                                                  /**< 滚动区域 */
+    QComboBox *formatComboBox;                                                /**< 条码格式选择框 */
     ZXing::BarcodeFormat currentBarcodeFormat = ZXing::BarcodeFormat::QRCode; /**< 当前选择的条码格式 */
-    QLineEdit* widthInput;                                                    /**< 图片宽度输入框 */
-    QLineEdit* heightInput;                                                   /**< 图片高度输入框 */
-    QFileDialog* fileDialog;                                                  /**< 文件选择对话框 */
+    QLineEdit *widthInput;                                                    /**< 图片宽度输入框 */
+    QLineEdit *heightInput;                                                   /**< 图片高度输入框 */
+    QFileDialog *fileDialog;                                                  /**< 文件选择对话框 */
     std::unique_ptr<MqttSubscriber> subscriber_;                              /**< MQTT订阅者实例 */
     std::unique_ptr<MQTTMessageWidget> messageWidget;                         /**< MQTT消息展示窗口 */
-    CameraWidget preview;                                                    /**< 摄像头预览窗口 */
-
+    CameraWidget preview;                                                     /**< 摄像头预览窗口 */
 };

@@ -9,14 +9,14 @@
  * @note 这些仅仅是声明，实际定义由构建系统执行 version_info.ps1 脚本生成 version.cpp
  */
 namespace version {
-    extern const std::string_view git_hash;
-    extern const std::string_view git_tag;
-    extern const std::string_view git_branch;
-    extern const std::string_view git_commit_time;
-    extern const std::string_view build_time;
-    extern const std::string_view system_version;
-    extern const std::string_view kernel_version;
-    extern const std::string_view architecture;
+extern const std::string_view git_hash;
+extern const std::string_view git_tag;
+extern const std::string_view git_branch;
+extern const std::string_view git_commit_time;
+extern const std::string_view build_time;
+extern const std::string_view system_version;
+extern const std::string_view kernel_version;
+extern const std::string_view architecture;
 }; // namespace version
 
 #endif // VERSION_H

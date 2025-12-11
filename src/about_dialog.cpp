@@ -13,7 +13,8 @@
 #include <QVBoxLayout>
 #include <spdlog/spdlog.h>
 
-AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
+AboutDialog::AboutDialog(QWidget *parent)
+    : QDialog(parent) {
     setWindowTitle("关于 Lab2QRCode");
     setFixedSize(480, 520);
 
@@ -21,9 +22,14 @@ AboutDialog::AboutDialog(QWidget* parent) : QDialog(parent) {
     loadStyleSheet();
 }
 
-void AboutDialog::setVersionInfo(const QString& tag, const QString& hash, const QString& branch,
-                                 const QString& commitTime, const QString& buildTime, const QString& systemVersion,
-                                 const QString& kernelVersion, const QString& architecture) {
+void AboutDialog::setVersionInfo(const QString &tag,
+                                 const QString &hash,
+                                 const QString &branch,
+                                 const QString &commitTime,
+                                 const QString &buildTime,
+                                 const QString &systemVersion,
+                                 const QString &kernelVersion,
+                                 const QString &architecture) {
     m_tag = tag;
     m_hash = hash;
     m_branch = branch;
@@ -33,12 +39,12 @@ void AboutDialog::setVersionInfo(const QString& tag, const QString& hash, const 
     m_kernelVersion = kernelVersion;
     m_architecture = architecture;
     // 更新UI显示版本信息
-    QWidget* infoWidget = findChild<QWidget*>("infoWidget");
+    QWidget *infoWidget = findChild<QWidget *>("infoWidget");
     if (infoWidget) {
-        QGridLayout* infoLayout = qobject_cast<QGridLayout*>(infoWidget->layout());
+        QGridLayout *infoLayout = qobject_cast<QGridLayout *>(infoWidget->layout());
         if (infoLayout) {
             // 清空现有布局内容
-            QLayoutItem* child;
+            QLayoutItem *child;
             while ((child = infoLayout->takeAt(0)) != nullptr) {
                 delete child->widget();
                 delete child;
@@ -59,7 +65,7 @@ void AboutDialog::setVersionInfo(const QString& tag, const QString& hash, const 
 
 void AboutDialog::initUI() {
     // 主布局
-    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // 标题
     m_titleLabel = new QLabel("Lab2QRCode");
@@ -73,21 +79,21 @@ void AboutDialog::initUI() {
     mainLayout->addWidget(m_subtitleLabel);
 
     // 分隔线
-    QFrame* separator1 = new QFrame();
+    QFrame *separator1 = new QFrame();
     separator1->setObjectName("separator");
     separator1->setFrameShape(QFrame::HLine);
     mainLayout->addWidget(separator1);
 
     // 版本信息区域
-    QWidget* infoWidget = new QWidget();
+    QWidget *infoWidget = new QWidget();
     infoWidget->setObjectName("infoWidget");
-    QGridLayout* infoLayout = new QGridLayout(infoWidget);
+    QGridLayout *infoLayout = new QGridLayout(infoWidget);
     infoLayout->setSpacing(8);
     infoLayout->setContentsMargins(20, 10, 20, 10);
     mainLayout->addWidget(infoWidget);
 
     // 分隔线
-    QFrame* separator2 = new QFrame();
+    QFrame *separator2 = new QFrame();
     separator2->setObjectName("separator");
     separator2->setFrameShape(QFrame::HLine);
     mainLayout->addWidget(separator2);
@@ -109,7 +115,7 @@ void AboutDialog::initUI() {
     mainLayout->addWidget(m_githubLabel);
 
     // 按钮区域
-    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
 
     m_closeButton = new QPushButton("关闭");
@@ -137,13 +143,15 @@ void AboutDialog::loadStyleSheet() {
     }
 }
 
-void AboutDialog::onGithubClicked() { QDesktopServices::openUrl(QUrl("https://github.com/Mq-b/Lab2QRCode")); }
+void AboutDialog::onGithubClicked() {
+    QDesktopServices::openUrl(QUrl("https://github.com/Mq-b/Lab2QRCode"));
+}
 
-void AboutDialog::addInfoRow(QGridLayout* layout, int row, const QString& label, const QString& value) {
-    QLabel* infoLabel = new QLabel(label);
+void AboutDialog::addInfoRow(QGridLayout *layout, int row, const QString &label, const QString &value) {
+    QLabel *infoLabel = new QLabel(label);
     infoLabel->setObjectName("infoLabel");
 
-    QLabel* valueLabel = new QLabel(value);
+    QLabel *valueLabel = new QLabel(value);
     valueLabel->setObjectName("valueLabel");
     valueLabel->setTextInteractionFlags(Qt::TextSelectableByMouse);
 
@@ -151,9 +159,10 @@ void AboutDialog::addInfoRow(QGridLayout* layout, int row, const QString& label,
     layout->addWidget(valueLabel, row, 1, Qt::AlignLeft);
 }
 
-QString AboutDialog::formatTime(const QString& timeStr) const {
-    if (timeStr.isEmpty())
+QString AboutDialog::formatTime(const QString &timeStr) const {
+    if (timeStr.isEmpty()) {
         return "未知";
+    }
 
     // 如果时间字符串包含T（ISO8601格式），进行格式化
     if (timeStr.contains('T')) {

@@ -10,11 +10,10 @@ class QPushButton;
  * 
  * 提供信息提示和更新提示功能，可以自定义按钮数量。
  */
-class MessageDialog : public QDialog
-{
+class MessageDialog : public QDialog {
     Q_OBJECT
 
-public:
+  public:
     /**
      * @brief 构造函数，默认单按钮
      * @param parent 父窗口
@@ -45,16 +44,13 @@ public:
      * @param buttons 按钮文本列表
      * @return 返回点击的按钮文本
      */
-    static QString updateDialog(QWidget *parent,
-                                const QString &title,
-                                const QString &text,
-                                const QStringList &buttons);
+    static QString updateDialog(QWidget *parent, const QString &title, const QString &text, const QStringList &buttons);
 
-private:
-    QLabel *m_label;            /**< 显示主要内容的标签 */
-    QLabel *m_titleLabel;       /**< 对话框标题标签 */
-    QPushButton *m_closeBtn;    /**< 默认关闭按钮 */
-    QString m_clickedButton;    /**< 保存用户点击的按钮文本 */
+  private:
+    QLabel *m_label;         /**< 显示主要内容的标签 */
+    QLabel *m_titleLabel;    /**< 对话框标题标签 */
+    QPushButton *m_closeBtn; /**< 默认关闭按钮 */
+    QString m_clickedButton; /**< 保存用户点击的按钮文本 */
 
     /**
      * @brief 内部通用执行函数
