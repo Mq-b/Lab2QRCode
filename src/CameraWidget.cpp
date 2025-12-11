@@ -97,10 +97,12 @@ static void DrawBarcode(cv::Mat &img, const ZXing::Barcode &bc) {
  */
 cv::Mat RectifyPolygonToRect(const cv::Mat &img, const ZXing::Barcode &bc, bool enhance) {
     const auto corners = bc.position();
-    const std::vector<cv::Point2f> barcodeCorners = {cv::Point2f(corners[0].x, corners[0].y),
-                                                     cv::Point2f(corners[1].x, corners[1].y),
-                                                     cv::Point2f(corners[2].x, corners[2].y),
-                                                     cv::Point2f(corners[3].x, corners[3].y)};
+    const std::vector<cv::Point2f> barcodeCorners = {
+        cv::Point2f(corners[0].x, corners[0].y),
+        cv::Point2f(corners[1].x, corners[1].y),
+        cv::Point2f(corners[2].x, corners[2].y),
+        cv::Point2f(corners[3].x, corners[3].y),
+    };
     const auto calcDistance = [](const cv::Point2f &a, const cv::Point2f &b) {
         cv::Point2f diff = a - b;
         return std::sqrt(diff.x * diff.x + diff.y * diff.y);
@@ -111,20 +113,24 @@ cv::Mat RectifyPolygonToRect(const cv::Mat &img, const ZXing::Barcode &bc, bool 
         calcDistance(barcodeCorners[2], barcodeCorners[3]),
         calcDistance(barcodeCorners[3], barcodeCorners[0]),
     });
-    const std::vector<cv::Point2f> rectCorners = {cv::Point2f(0, 0),
-                                                  cv::Point2f(maxSideLength - 1, 0),
-                                                  cv::Point2f(maxSideLength - 1, maxSideLength - 1),
-                                                  cv::Point2f(0, maxSideLength - 1)};
+    const std::vector<cv::Point2f> rectCorners = {
+        cv::Point2f(0, 0),
+        cv::Point2f(maxSideLength - 1, 0),
+        cv::Point2f(maxSideLength - 1, maxSideLength - 1),
+        cv::Point2f(0, maxSideLength - 1),
+    };
     const std::vector<cv::Point2f> rectCornersWithMargin = {
         cv::Point2f(-0.05 * maxSideLength, -0.05 * maxSideLength),
         cv::Point2f(1.05 * maxSideLength - 1, -0.05 * maxSideLength),
         cv::Point2f(1.05 * maxSideLength - 1, 1.05 * maxSideLength - 1),
         cv::Point2f(-0.05 * maxSideLength, 1.05 * maxSideLength - 1)};
     const auto outputSize = static_cast<int>(maxSideLength * 1.1);
-    const std::vector<cv::Point2f> outputRect = {cv::Point2f(0, 0),
-                                                 cv::Point2f(outputSize - 1, 0),
-                                                 cv::Point2f(outputSize - 1, outputSize - 1),
-                                                 cv::Point2f(0, outputSize - 1)};
+    const std::vector<cv::Point2f> outputRect = {
+        cv::Point2f(0, 0),
+        cv::Point2f(outputSize - 1, 0),
+        cv::Point2f(outputSize - 1, outputSize - 1),
+        cv::Point2f(0, outputSize - 1),
+    };
     cv::Mat toBarcodeTransform = cv::getPerspectiveTransform(rectCorners, barcodeCorners);
     std::vector<cv::Point2f> marginBarcodeCorners(4);
     cv::perspectiveTransform(rectCornersWithMargin, marginBarcodeCorners, toBarcodeTransform);
@@ -319,8 +325,15 @@ CameraWidget::CameraWidget(QWidget *parent)
 
     {
         resultModel = new QStandardItemModel(0, 7, this); // 行，列
-        resultModel->setHorizontalHeaderLabels(
-            {"时间", "图像", "类型", "内容", "[隐藏] PNG 数据", "[隐藏] 图片宽度", "[隐藏] 图片高度"});
+        resultModel->setHorizontalHeaderLabels({
+            "时间",
+            "图像",
+            "类型",
+            "内容",
+            "[隐藏] PNG 数据",
+            "[隐藏] 图片宽度",
+            "[隐藏] 图片高度",
+        });
 
         resultDisplay = new QTableView(this);
         resultDisplay->setModel(resultModel);
@@ -587,23 +600,17 @@ bool CameraWidget::exportResultsToHtml(const QString &filePath) {
     QString html;
     html.reserve(4096);
     html += "<!DOCTYPE html>\n";
-    html +=
-        "<html lang=zh-CN><meta charset=UTF-8><meta content='width=device-width,initial-scale=1'name=viewport><title>扫描结果</title><style>body{font-family:'Segoe UI',Aria";
-    html +=
-        "l,'Microsoft YaHei',sans-serif;background:#f7f7f7;margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}table{border-colla";
-    html +=
-        "pse:separate;border-spacing:0;width:800px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);border-radius:12px;overflow:hidden;margin:40px auto}caption{font-si";
-    html +=
-        "ze:1.5em;font-weight:700;padding:18px 0 10px 0;color:#333;background:#f0f4fa;border-bottom:1px solid #eaeaea}thead th{background:#f0f4fa;color:#333;font-weight:600";
-    html +=
-        ";padding:14px 10px;border-bottom:2px solid #eaeaea;text-align:center}tbody td{padding:12px 10px;border-bottom:1px solid #f0f0f0;text-align:center;color:#444}tbody ";
-    html +=
-        "tr:last-child td{border-bottom:none}tbody tr{transition:background .2s}tbody tr:hover{background:#eaf6ff}tbody img{max-width:60px;max-height:60px;border-radius:6px";
-    html +=
-        ";box-shadow:0 1px 4px rgba(0,0,0,.07);background:#fafafa;border:1px solid #eaeaea}#preview{position:fixed;display:none;z-index:9999;border:2px solid #eaeaea;backgr";
-    html +=
-        "ound:#fff;box-shadow:0 4px 24px rgba(0,0,0,.18);border-radius:10px;overflow:hidden}#preview img{max-width:400px;max-height:400px;display:block}</style><table><capt";
+    // clang-format off
+    html += "<html lang=zh-CN><meta charset=UTF-8><meta content='width=device-width,initial-scale=1'name=viewport><title>扫描结果</title><style>body{font-family:'Segoe UI',Aria";
+    html += "l,'Microsoft YaHei',sans-serif;background:#f7f7f7;margin:0;padding:0;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}table{border-colla";
+    html += "pse:separate;border-spacing:0;width:800px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);border-radius:12px;overflow:hidden;margin:40px auto}caption{font-si";
+    html += "ze:1.5em;font-weight:700;padding:18px 0 10px 0;color:#333;background:#f0f4fa;border-bottom:1px solid #eaeaea}thead th{background:#f0f4fa;color:#333;font-weight:600";
+    html += ";padding:14px 10px;border-bottom:2px solid #eaeaea;text-align:center}tbody td{padding:12px 10px;border-bottom:1px solid #f0f0f0;text-align:center;color:#444}tbody ";
+    html += "tr:last-child td{border-bottom:none}tbody tr{transition:background .2s}tbody tr:hover{background:#eaf6ff}tbody img{max-width:60px;max-height:60px;border-radius:6px";
+    html += ";box-shadow:0 1px 4px rgba(0,0,0,.07);background:#fafafa;border:1px solid #eaeaea}#preview{position:fixed;display:none;z-index:9999;border:2px solid #eaeaea;backgr";
+    html += "ound:#fff;box-shadow:0 4px 24px rgba(0,0,0,.18);border-radius:10px;overflow:hidden}#preview img{max-width:400px;max-height:400px;display:block}</style><table><capt";
     html += "ion>扫描结果<thead><tr><th>时间<th>图像<th>类型<th>内容<tbody>";
+    // clang-format on
 
     for (int r = 0; r < resultModel->rowCount(); r++) {
         const auto getText = [&](int c) -> QString {
@@ -628,13 +635,12 @@ bool CameraWidget::exportResultsToHtml(const QString &filePath) {
         html += "</tr>";
     }
 
-    html +=
-        "</tbody></table><div id='preview'><img /></div><script>const preview=document.getElementById('preview');document.querySelectorAll('tbody img').forEach(e=>{e.addEvent";
-    html +=
-        "Listener('mouseenter',function(t){let i=e.getAttribute('src'),l=preview.querySelector('img');l.src=i,preview.style.display='block',preview.style.left=t.clientX+20+'p";
-    html +=
-        "x',preview.style.top=t.clientY+'px'}),e.addEventListener('mousemove',function(e){preview.style.left=e.clientX+20+'px',preview.style.top=e.clientY+'px'}),e.addEventLi";
+    // clang-format off
+    html += "</tbody></table><div id='preview'><img /></div><script>const preview=document.getElementById('preview');document.querySelectorAll('tbody img').forEach(e=>{e.addEvent";
+    html += "Listener('mouseenter',function(t){let i=e.getAttribute('src'),l=preview.querySelector('img');l.src=i,preview.style.display='block',preview.style.left=t.clientX+20+'p";
+    html += "x',preview.style.top=t.clientY+'px'}),e.addEventListener('mousemove',function(e){preview.style.left=e.clientX+20+'px',preview.style.top=e.clientY+'px'}),e.addEventLi";
     html += "stener('mouseleave',function(){preview.style.display='none'})});</script></body></html>";
+    // clang-format on
 
     QFile f(filePath);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Text)) {

@@ -27,16 +27,18 @@ $architecture = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitect
 @"
 #include "version.h"
 
-namespace version{
-    constexpr std::string_view git_hash = "$git_hash";
-    constexpr std::string_view git_tag = "$git_tag";
-    constexpr std::string_view git_branch = "$git_branch";
-    constexpr std::string_view git_commit_time = "$git_commit_time";
-    constexpr std::string_view build_time = "$build_time";
-    constexpr std::string_view system_version = "$system_version";
-    constexpr std::string_view kernel_version = "$kernel_version";
-    constexpr std::string_view architecture = "$architecture";
-};
+namespace version {
+
+constexpr std::string_view git_hash = "$git_hash";
+constexpr std::string_view git_tag = "$git_tag";
+constexpr std::string_view git_branch = "$git_branch";
+constexpr std::string_view git_commit_time = "$git_commit_time";
+constexpr std::string_view build_time = "$build_time";
+constexpr std::string_view system_version = "$system_version";
+constexpr std::string_view kernel_version = "$kernel_version";
+constexpr std::string_view architecture = "$architecture";
+
+}; // namespace version
 "@ | Out-File -Encoding utf8 version.cpp
 
 # 提示生成成功

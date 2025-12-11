@@ -100,6 +100,7 @@ MessageDialog::MessageDialog(QWidget *parent)
     // ---------------- 按钮信号 ----------------
     connect(m_closeBtn, &QPushButton::clicked, this, &QDialog::accept);
 }
+
 MessageDialog::MessageDialog(QWidget *parent, const QStringList &buttons)
     : QDialog(parent) {
     QString global_font_name = "Microsoft YaHei";

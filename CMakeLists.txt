@@ -14,65 +14,53 @@ set(CMAKE_PREFIX_PATH $ENV{VCPKG_LIB} ${CMAKE_PREFIX_PATH})
 
 set(VERSION_CPP "${CMAKE_SOURCE_DIR}/src/version_info/version.cpp")
 
-add_custom_target(RunPowerShellScript ALL
-    COMMAND ${CMAKE_COMMAND} -E echo "Running PowerShell script..."
-    COMMAND pwsh -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/version_info
-    COMMENT "powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1"
-    BYPRODUCTS ${VERSION_CPP}
-)
-
+add_custom_target(
+  RunPowerShellScript ALL
+  COMMAND ${CMAKE_COMMAND} -E echo "Running PowerShell script..."
+  COMMAND pwsh -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/version_info
+  COMMENT "powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1"
+  BYPRODUCTS ${VERSION_CPP})
 
 if(MSVC)
-    add_compile_options(/EHsc /utf-8 /bigobj)
+  add_compile_options(/EHsc /utf-8 /bigobj)
 endif()
 
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets Concurrent Multimedia MultimediaWidgets)
 find_package(Threads REQUIRED)
 find_package(ZXing REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS
-    headers
-    random
-)
+find_package(Boost CONFIG REQUIRED COMPONENTS headers random)
 find_package(spdlog CONFIG REQUIRED)
 
 find_path(XLSXWRITER_INCLUDE_DIR xlsxwriter.h)
 find_library(XLSXWRITER_LIBRARY NAMES xlsxwriter)
 if(NOT XLSXWRITER_INCLUDE_DIR OR NOT XLSXWRITER_LIBRARY)
-    message(FATAL_ERROR "Could not find xlsxwriter library or include directory")
+  message(FATAL_ERROR "Could not find xlsxwriter library or include directory")
 endif()
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-add_executable(${PROJECT_NAME} 
-    WIN32 
-    ${SOURCES}
-    ${VERSION_CPP}
-    "logo.rc"
-)
+add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${VERSION_CPP} "logo.rc")
 add_dependencies(${PROJECT_NAME} RunPowerShellScript)
 
-
-target_link_libraries(${PROJECT_NAME} PRIVATE 
-    Qt5::Core
-    Qt5::Widgets
-    Qt5::Concurrent
-    Qt5::Multimedia
-    Qt5::MultimediaWidgets
-    ZXing::ZXing
-    ${OpenCV_LIBS}
-    Boost::headers
-    Boost::random
-    spdlog::spdlog_header_only
-)
+target_link_libraries(
+  ${PROJECT_NAME}
+  PRIVATE Qt5::Core
+          Qt5::Widgets
+          Qt5::Concurrent
+          Qt5::Multimedia
+          Qt5::MultimediaWidgets
+          ZXing::ZXing
+          ${OpenCV_LIBS}
+          Boost::headers
+          Boost::random
+          spdlog::spdlog_header_only)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${XLSXWRITER_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${XLSXWRITER_LIBRARY})
 
 add_custom_command(
-    TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/setting"
-            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/setting"
-)
+  TARGET ${PROJECT_NAME}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/setting" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/setting")

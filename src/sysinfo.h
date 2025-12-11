@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <thread>
 
 #ifdef _WIN32
 #    include <windows.h>

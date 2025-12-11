@@ -8,9 +8,9 @@
 
 * 报错*Unsupported Format*的样例暂时**未**测试是否正确
 
-
 ## [二维码转文字](QRCode2text)
 
 考虑到多数图案本身是正确的，只保留个别大尺度测试用例
+
 * 对于所有QRCode都启用了Base64
 * 对于所有Aztex都启用了Base64

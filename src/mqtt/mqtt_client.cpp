@@ -88,7 +88,6 @@ void MqttSubscriber::subscribe(const std::string &topic) {
         .connect_property(boost::mqtt5::prop::session_expiry_interval, 60 * 60) // 1 hour
         .connect_property(boost::mqtt5::prop::maximum_packet_size, 1024 * 1024) // 1 MB
         .async_run(boost::asio::detached);
-    ;
 
     const boost::mqtt5::subscribe_topic sub_topic(topic);
 

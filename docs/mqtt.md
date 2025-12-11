@@ -52,7 +52,6 @@ log_dest stdout
 
 我们可以使用命令 `sudo tail -f /var/log/mosquitto/mosquitto.log` 来查看 mqtt 代理的运行日志。
 
-
 ### 客户端订阅与发布
 
 使用 [**mosquitto**](https://github.com/eclipse-mosquitto/mosquitto) 提供的 `mosquitto_sub` 与 `mosquitto_pub` 工具简单演示一下。
