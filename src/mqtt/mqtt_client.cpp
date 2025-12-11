@@ -16,27 +16,47 @@ MqttConfig MqttSubscriber::loadMqttConfig(const std::string& filename) {
         file >> config_json;
     }
 
-    spdlog::info("MQTT 配置文件: Host={}, Port={}, Client ID={}", config_json["mqtt"]["host"].dump(), config_json["mqtt"]["port"].dump(), config_json["mqtt"]["client_id"].dump());
+    // 默认配置,如果配置文件不存在则使用默认值
+    std::string host = "127.0.0.1";
+    uint16_t port = 1883;
+    std::string client_id;
+
+    // 文件存在则更新上面的默认值
+    if (config_json.contains("mqtt") && config_json["mqtt"].is_object()) {
+        auto& mqtt = config_json["mqtt"];
+        if (mqtt.contains("host") && mqtt["host"].is_string()) {
+            host = mqtt["host"].get<std::string>();
+        }
+        if (mqtt.contains("port") && mqtt["port"].is_number()) {
+            port = mqtt["port"].get<uint16_t>();
+        }
+        if (mqtt.contains("client_id") && mqtt["client_id"].is_string()) {
+            client_id = mqtt["client_id"].get<std::string>();
+        }
+    }
+
+    spdlog::info("MQTT 配置文件: Host={}, Port={}, Client ID={}", host, port, client_id);
 
     MqttConfig config;
-    config.host = config_json["mqtt"]["host"];
-    config.port = config_json["mqtt"]["port"];
+    config.host = host;
+    config.port = port;
 
     // 如果 client_id 不存在或为空，则生成并保存
-    if (!config_json.contains("mqtt") ||
-        !config_json["mqtt"].contains("client_id") ||
-        config_json["mqtt"]["client_id"].get<std::string>().empty()) {
-        
+    if (client_id.empty()) {
         config.client_id = generate_client_id();
         spdlog::info("client_id 不存在，生成ID: {}", config.client_id);
+        
         // 更新配置
+        config_json["mqtt"]["host"] = host;
+        config_json["mqtt"]["port"] = port;
         config_json["mqtt"]["client_id"] = config.client_id;
+        
         std::ofstream out_file(filename);
         if (out_file.is_open()) {
             out_file << config_json.dump(4);
         }
     } else {
-        config.client_id = config_json["mqtt"]["client_id"];
+        config.client_id = client_id;
     }
 
     return config;
