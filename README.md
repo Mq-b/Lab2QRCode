@@ -37,7 +37,9 @@
 - [**`magic_enum`**](https://github.com/Neargye/magic_enum) - 枚举转字符串
 - [**`xlsxwriter`**](https://github.com/jmcnamara/libxlsxwriter) - Excel 文件写入
 
-使用 Visual Studio 17 或 gcc 工具链构建。
+**构建工具**：支持 Visual Studio 2022 (MSVC)、GCC 及 Clang 工具链
+
+**测试平台**：已在 Windows 10/11、Ubuntu 22.04/24.04、Debian 12/13、Arch Linux 等主流系统验证通过
 
 项目还依赖 [`pwsh`](https://github.com/PowerShell/PowerShell/releases/tag/v7.5.4) 终端。
 
@@ -64,9 +66,15 @@ sudo dpkg -i powershell_7.5.4-1.deb_amd64.deb
 sudo apt install qtbase5-dev qt5-qmake qtmultimedia5-dev libboost-all-dev cmake ninja-build build-essential libopencv-dev libspdlog-dev libxlsxwriter-dev libzxing-dev
 ```
 
-> 注意：如果是使用了 `clang >= 20` 编译器，则不应该安装 `libfmt-dev` 和 `libspdlog-dev`。
+> [!WARNING]
 >
-> 请自行从源码编译 `fmt` 和 `spdlog`，因为它们在新版修复了一个编译问题。
+> - **注意**：如果是使用了 `clang >= 20` 编译器，则不应该安装 `libfmt-dev` 和 `libspdlog-dev`。
+>
+>   请自行从源码编译 `fmt` 和 `spdlog`，因为它们在新版修复了一个编译问题。
+>
+> - **注意**：在 Ubuntu22.04 中注意到，如果使用 `vcpkg` 或 `apt` 安装 `opencv4`，会与 `Qt5` 的 `gtk` 插件产生冲突，**导致 Qt 程序无法启动**。
+>
+>   请自行源码编译 `opencv4`，构建教程参见 [opencv 官方文档](https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html)。
 
 对于其它发行版，请自行安装相应的依赖包。
 
@@ -79,7 +87,7 @@ cmake ..
 cmake --build . -j --config Release
 ```
 
-构建完成后，在 `build/bin/` 目录下会生成 `Lab2QRCode` 可执行文件。
+构建完成后，在 `build/Release/bin/` 目录下会生成 `Lab2QRCode` 可执行文件。
 
 ### Windows
 
@@ -101,7 +109,9 @@ git clone https://github.com/microsoft/vcpkg.git
 ./vcpkg/vcpkg install opencv[core]:x64-windows spdlog:x64-windows libxlsxwriter:x64-windows
 ```
 
-> 注意这没有安装 `qt5` `boost` 和 `zxing-cpp`，请自行安装它们。
+> [!NOTE]
+>
+> 注意这没有安装 `qt5` 、`boost` 和 `zxing-cpp`。也可以直接使用 vcpkg 安装前两者，但是 `zxing-cpp` 并没有收录在 vcpkg 当中，需要自行源码编译。
 
 #### 构建项目
 
@@ -112,6 +122,8 @@ cmake ..
 cmake --build . -j --config Release
 ```
 
+> [!TIP]
+>
 > 如果你在上一步中安装了 `vcpkg`，请将：
 >
 > ```sh
@@ -123,6 +135,8 @@ cmake --build . -j --config Release
 > ```sh
 > cmake .. -DCMAKE_TOOLCHAIN_FILE="../vcpkg/scripts/buildsystems/vcpkg.cmake"
 > ```
+> 
+> 路径根据自身环境而定，当然如果你已经将 vcpkg 集成到全局的环境当中也不需要这一步。
 
 构建完成后，在 `build\Release\bin\` 目录下会生成 `Lab2QRCode.exe` 可执行文件。
 
@@ -177,14 +191,16 @@ Lab2QRCode 支持以下多种条码格式的生成和识别：
 
 CI 使用 `clang-format-22` 进行检查，建议使用相同版本的 `clang-format` 来格式化代码。
 
+> [!NOTE]
+>
 > 注意如果使用 `clang-format-19` 或更低版本有一个已知问题：
 >
 > 在低版本中：
 >
 > ```cpp
 > MyClass obj = {
->        .member1 = value1,
->        .member2 = value2,
+>     .member1 = value1,
+>     .member2 = value2,
 > };
 > ```
 >
@@ -192,8 +208,8 @@ CI 使用 `clang-format-22` 进行检查，建议使用相同版本的 `clang-fo
 >
 > ```cpp
 > MyClass obj = {
->     .member1 = value1,
->     .member2 = value2,
+>  .member1 = value1,
+>  .member2 = value2,
 > };
 > ```
 >
