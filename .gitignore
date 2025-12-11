@@ -2,6 +2,7 @@
 /.vs
 /.cache
 /.vscode
+/out
 CMakePresets.json
 CMakeUserPresets.json
 version.cpp

@@ -561,10 +561,10 @@ void CameraWidget::updateFrame(const FrameResult &r) const {
             // If the rectified image is empty, skip adding this result
             return;
         }
-        QImage img = QImage((const uchar *)r.rectifiedImage.data,
+        QImage img = QImage(static_cast<uchar *>(r.rectifiedImage.data),
                             r.rectifiedImage.cols,
                             r.rectifiedImage.rows,
-                            r.rectifiedImage.step,
+                            static_cast<int>(r.rectifiedImage.step),
                             QImage::Format_RGB888)
                          .rgbSwapped();
         QPixmap pixmap = QPixmap::fromImage(img).scaled(128, 128, Qt::KeepAspectRatio, Qt::SmoothTransformation);
