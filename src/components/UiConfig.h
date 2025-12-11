@@ -10,10 +10,10 @@ struct UiConfig {
 };
 
 struct Ui {
-  private:
+private:
     UiConfig config;
 
-  public:
+public:
     Ui();
     std::string getFontFamily() const {
         return config.font_family;

@@ -33,7 +33,7 @@ class QStandardItemModel;
  */
 class CameraWidget : public QWidget {
     Q_OBJECT
-  public:
+public:
     /**
      * @brief 构造函数，初始化摄像头预览窗口
      * 
@@ -58,7 +58,7 @@ class CameraWidget : public QWidget {
      */
     void stopCamera();
 
-  protected:
+protected:
     /**
      * @brief 事件过滤器函数
      * 
@@ -84,7 +84,7 @@ class CameraWidget : public QWidget {
      */
     void showEvent(QShowEvent *event) override;
 
-  private:
+private:
     /**
      * @brief 摄像头设备切换处理函数
      * 
@@ -150,7 +150,7 @@ class CameraWidget : public QWidget {
      */
     void selectBestCameraConfigUI(const CameraConfig &bestConfig) const;
 
-  private:
+private:
     cv::VideoCapture *capture = nullptr;       /**< 摄像头捕获对象，用于获取视频帧 */
     std::atomic_bool running{false};           /**< 控制摄像头捕获循环是否运行的原子布尔值 */
     std::thread captureThread;                 /**< 摄像头捕获线程对象 */

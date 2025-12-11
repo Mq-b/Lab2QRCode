@@ -3,16 +3,16 @@
 #include <thread>
 
 #ifdef _WIN32
-#    include <windows.h>
+    #include <windows.h>
 #endif
 
 #ifdef __linux__
-#    include <fstream>
-#    include <string>
+    #include <fstream>
+    #include <string>
 #endif
 
 #if defined(__APPLE__) && defined(__MACH__)
-#    include <sys/sysctl.h>
+    #include <sys/sysctl.h>
 #endif
 
 namespace sysinfo {

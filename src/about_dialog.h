@@ -18,7 +18,7 @@ class QFrame;
 class AboutDialog : public QDialog {
     Q_OBJECT
 
-  public:
+public:
     explicit AboutDialog(QWidget *parent = nullptr);
     void setVersionInfo(const QString &tag,
                         const QString &hash,
@@ -29,10 +29,10 @@ class AboutDialog : public QDialog {
                         const QString &kernelVersion,
                         const QString &architecture);
 
-  private slots:
+private slots:
     void onGithubClicked();
 
-  private:
+private:
     void initUI();
     void loadStyleSheet();
     void addInfoRow(QGridLayout *layout, int row, const QString &label, const QString &value);

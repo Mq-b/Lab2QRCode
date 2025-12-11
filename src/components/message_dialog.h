@@ -13,7 +13,7 @@ class QPushButton;
 class MessageDialog : public QDialog {
     Q_OBJECT
 
-  public:
+public:
     /**
      * @brief 构造函数，默认单按钮
      * @param parent 父窗口
@@ -46,7 +46,7 @@ class MessageDialog : public QDialog {
      */
     static QString updateDialog(QWidget *parent, const QString &title, const QString &text, const QStringList &buttons);
 
-  private:
+private:
     QLabel *m_label;         /**< 显示主要内容的标签 */
     QLabel *m_titleLabel;    /**< 对话框标题标签 */
     QPushButton *m_closeBtn; /**< 默认关闭按钮 */

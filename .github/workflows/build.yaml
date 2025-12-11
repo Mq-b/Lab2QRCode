@@ -20,16 +20,12 @@ jobs:
           fetch-depth: 0
 
       - name: Install clang-format
-        run: |
-          sudo apt update
-          sudo apt install -y curl gnupg
-          curl https://apt.llvm.org/llvm.sh | grep -Ev '^\s*apt(-get)?\s+install' | sudo bash -s 22
-          sudo apt install -y clang-format-22
+        run: bash scripts/ci/linux/install-clang-format.sh
 
       - name: Format check for `src`
         id: check-src
         continue-on-error: true
-        run: bash check-format.sh ./src/
+        run: bash scripts/ci/linux/check-format.sh ./src/
 
       - name: Final result
         id: final
@@ -72,15 +68,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install clang-format
-        run: |
-          sudo apt update
-          sudo apt install -y curl gnupg
-          curl https://apt.llvm.org/llvm.sh | grep -Ev '^\s*apt(-get)?\s+install' | sudo bash -s 22
-          sudo apt install -y clang-format-22
+        run: bash scripts/ci/linux/install-clang-format.sh
 
       - name: Fix format
         run: |
-          bash format-all.sh ./src/
+          bash scripts/ci/linux/format-all.sh ./src/
 
       - name: Commit and push changes
         run: |

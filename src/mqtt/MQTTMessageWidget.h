@@ -19,15 +19,15 @@
 class MQTTMessageWidget : public QWidget {
     Q_OBJECT
 
-  public:
+public:
     explicit MQTTMessageWidget(QWidget *parent = nullptr);
     void addMessage(const QString &topic, const QByteArray &rawData) const;
 
-  public slots:
+public slots:
     void clearMessages();
     void exportMessages();
 
-  private:
+private:
     void setupUI();
 
     QTabWidget *tabWidget;

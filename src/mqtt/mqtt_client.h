@@ -23,7 +23,7 @@ struct MqttConfig {
  * @brief MQTT 订阅客户端，用于连接 MQTT 代理并接收消息
  */
 class MqttSubscriber {
-  public:
+public:
     using client_type = boost::mqtt5::mqtt_client<boost::asio::ip::tcp::socket>;
     using MessageCallback = std::function<void(const std::string &topic, const std::string &payload)>;
 
@@ -39,7 +39,7 @@ class MqttSubscriber {
     void stop();
     ~MqttSubscriber();
 
-  private:
+private:
     void start_receive();
 
     std::unique_ptr<boost::asio::io_context> ioc_;

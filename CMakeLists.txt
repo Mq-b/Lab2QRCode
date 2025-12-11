@@ -17,7 +17,7 @@ set(VERSION_CPP "${CMAKE_SOURCE_DIR}/src/version_info/version.cpp")
 add_custom_target(
   RunPowerShellScript ALL
   COMMAND ${CMAKE_COMMAND} -E echo "Running PowerShell script..."
-  COMMAND pwsh -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1
+  COMMAND pwsh -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/scripts/build/version_info.ps1
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/version_info
   COMMENT "powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1"
   BYPRODUCTS ${VERSION_CPP})

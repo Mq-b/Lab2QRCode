@@ -8,7 +8,7 @@
  */
 class FrameWidget : public QWidget {
     Q_OBJECT
-  public:
+public:
     explicit FrameWidget(QWidget *parent = nullptr);
 
     /**
@@ -20,7 +20,7 @@ class FrameWidget : public QWidget {
 
     void clear();
 
-  protected:
+protected:
     /**
      * @brief 重写绘制事件以显示视频帧
      * 
@@ -28,6 +28,6 @@ class FrameWidget : public QWidget {
      */
     void paintEvent(QPaintEvent *event) override;
 
-  private:
+private:
     QImage m_image; // 转换后的图像
 };

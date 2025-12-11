@@ -31,7 +31,7 @@ class QMenuBar;
 class BarcodeWidget : public QWidget {
     Q_OBJECT
 
-  public:
+public:
     /**
      * @brief 构造函数，初始化窗口和控件布局。
      *
@@ -39,10 +39,10 @@ class BarcodeWidget : public QWidget {
      */
     explicit BarcodeWidget(QWidget *parent = nullptr);
 
-  private:
+private:
     static const QStringList barcodeFormats;
 
-  signals:
+signals:
     /**
      * @brief MQTT 消息接收信号
      * @param topic 接收到消息的主题(Topic)路径
@@ -53,7 +53,7 @@ class BarcodeWidget : public QWidget {
      */
     void mqttMessageReceived(const QString &topic, const QByteArray &payload);
 
-  private slots:
+private slots:
     /**
      * @brief 更新按钮状态，是否可点击
      *
@@ -122,7 +122,7 @@ class BarcodeWidget : public QWidget {
      */
     static ZXing::BarcodeFormat stringToBarcodeFormat(const QString &formatStr);
 
-  private:
+private:
     QStringList lastSelectedFiles; /**< 上次选择的文件路径列表 */
 
     QMenuBar *menuBar;  /**< 主菜单栏 */

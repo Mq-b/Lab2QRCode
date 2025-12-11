@@ -72,7 +72,6 @@ struct result_data_entry {
 
     explicit operator bool() const noexcept {
         return !std::holds_alternative<std::monostate>(data) && !std::holds_alternative<std::string>(data);
-        ;
     }
 };
 
