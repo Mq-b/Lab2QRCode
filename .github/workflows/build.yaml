@@ -5,11 +5,114 @@ on:
     branches:
       - master
     tags:
-      - 'v*'   # 例如 v1.0, v2.0, v2.0.1 等
-  pull_request:    
+      - "v*" # 例如 v1.0, v2.0, v2.0.1 等
+  pull_request:
   workflow_dispatch:
 
 jobs:
+  format-check:
+    name: Format Check
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install clang-format
+        run: |
+          sudo apt update
+          sudo apt install -y curl gnupg
+          curl https://apt.llvm.org/llvm.sh | grep -Ev '^\s*apt(-get)?\s+install' | sudo bash -s 22
+          sudo apt install -y clang-format-22
+
+      - name: Format check for `src`
+        id: check-src
+        continue-on-error: true
+        run: bash check-format.sh ./src/
+
+      - name: Final result
+        id: final
+        run: |
+          if [ "${{ steps.check-src.outcome }}" == "failure" ]; then
+            exit 1
+          fi
+
+  format-already-correct:
+    name: Format Already Correct
+    runs-on: ubuntu-24.04
+    needs: format-check
+    if: success()
+    outputs:
+      commit_hash: ${{ steps.get-commit-hash.outputs.commit_hash }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Commit Hash
+        id: get-commit-hash
+        run: echo "commit_hash=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  format-fix:
+    name: Format Fix
+    runs-on: ubuntu-24.04
+    needs: format-check
+    if: failure() && github.event_name == 'push' && github.actor != 'github-actions[bot]'
+    permissions:
+      contents: write
+    outputs:
+      commit_hash: ${{ steps.get-commit-hash.outputs.commit_hash }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install clang-format
+        run: |
+          sudo apt update
+          sudo apt install -y curl gnupg
+          curl https://apt.llvm.org/llvm.sh | grep -Ev '^\s*apt(-get)?\s+install' | sudo bash -s 22
+          sudo apt install -y clang-format-22
+
+      - name: Fix format
+        run: |
+          bash format-all.sh ./src/
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Fix code format issues" || echo "No changes to commit"
+          git push origin HEAD:${{ github.ref }}
+
+      - name: Get Commit Hash
+        id: get-commit-hash
+        run: echo "commit_hash=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  when-format-correct:
+    name: When Format Correct
+    runs-on: ubuntu-24.04
+    needs: ["format-already-correct", "format-fix"]
+    if: always()
+    outputs:
+      commit_hash: ${{ steps.get-commit-hash.outputs.commit_hash }}
+    steps:
+      - name: Get Commit Hash
+        id: get-commit-hash
+        run: |
+          if [ "${{ needs.format-already-correct.result }}" == "success" ]; then
+            echo "commit_hash=${{ needs.format-already-correct.outputs.commit_hash }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ needs.format-fix.result }}" == "success" ]; then
+            echo "commit_hash=${{ needs.format-fix.outputs.commit_hash }}" >> "$GITHUB_OUTPUT"
+          else
+            exit 1
+          fi
+
   windows-build:
     env:
       release_file: build/Release/bin/Lab2QRCode.exe
@@ -18,10 +121,13 @@ jobs:
       BOOST_ROOT: ./boost
     name: windows-latest
     runs-on: windows-2025
+    needs: when-format-correct
+    if: always()
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: ${{ needs.when-format-correct.outputs.commit_hash }}
           fetch-depth: 0
           fetch-tags: true
 
@@ -48,7 +154,7 @@ jobs:
           platform_version: 2022
           toolset: msvc
           cache: true
-            
+
       - name: Install dependencies
         shell: pwsh
         run: |
@@ -73,12 +179,12 @@ jobs:
               INTERFACE_INCLUDE_DIRECTORIES "${OpenCV_INCLUDE_DIRS}"
           )
           set(OpenCV_LIBS OpenCV::OpenCV)
-          '@ | Out-File -FilePath $opencvConfig -Encoding UTF8 
+          '@ | Out-File -FilePath $opencvConfig -Encoding UTF8
 
           # 构建 zxing-cpp
           git clone --depth 1 https://github.com/zxing-cpp/zxing-cpp.git `
             ../zxing-cpp --recurse -b v2.3.0
-            
+
           cmake -S ../zxing-cpp -B ../zxing-cpp/build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build ../zxing-cpp/build --config Release
           cmake --install ../zxing-cpp/build --prefix "${{ github.workspace }}/deps"
@@ -159,7 +265,7 @@ jobs:
       # 6️⃣ 上传构建产物到 GitHub Release 需要开启读写权限
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
-        if: github.ref_type == 'tag' 
+        if: github.ref_type == 'tag'
         with:
           files: "${{ env.release_zip  }}"
         env:
@@ -171,19 +277,23 @@ jobs:
       release_name: Lab2QRCode
       release_dir: build/Release/bin/
       release_zip: Lab2QRCode-linux.tar.gz
-
     name: Ubuntu GCC Build
     runs-on: ubuntu-24.04
-
+    needs: when-format-correct
+    if: always()
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.when-format-correct.outputs.commit_hash }}
+          fetch-depth: 0
+          fetch-tags: true
 
       # ---- Install Dependencies ----
       - name: Install Linux dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt update
+          sudo apt install -y \
             qtbase5-dev qt5-qmake \
             qtmultimedia5-dev libqt5multimedia5-plugins \
             libboost-all-dev \
@@ -228,7 +338,7 @@ jobs:
             --icon-file images/Lab2QRCode.png \
             --create-desktop-file \
             --plugin qt
-          
+
           mv *.AppImage ${{ env.release_name }}.AppImage
 
       # ---- Upload Build Artifacts ----

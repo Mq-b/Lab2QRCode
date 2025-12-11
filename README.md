@@ -171,6 +171,49 @@ Lab2QRCode 支持以下多种条码格式的生成和识别：
 
 3. 提交 Pull Request
 
+### 代码格式化
+
+我们使用 `clang-format` 来统一代码风格。请确保在提交代码前执行自动格式化。
+
+CI 使用 `clang-format-22` 进行检查，建议使用相同版本的 `clang-format` 来格式化代码。
+
+> 注意如果使用 `clang-format-19` 或更低版本有一个已知问题：
+>
+> 在低版本中：
+>
+> ```cpp
+> MyClass obj = {
+>        .member1 = value1,
+>        .member2 = value2,
+> };
+> ```
+>
+> 然而在高版本中：
+>
+> ```cpp
+> MyClass obj = {
+>     .member1 = value1,
+>     .member2 = value2,
+> };
+> ```
+>
+> 因此建议使用 `clang-format-22` 以避免不必要的代码差异。
+
+如果你是 Debian 系发行版用户，可以使用以下命令快速安装 `clang-22` 工具链：
+
+```sh
+sudo apt install curl gnupg
+curl https://apt.llvm.org/llvm.sh | sudo bash -s 22 all
+```
+
+如果你只希望安装 `clang-format-22`，可以使用以下命令：
+
+```sh
+sudo apt install curl gnupg
+curl https://apt.llvm.org/llvm.sh | grep -Ev '^\s*apt(-get)?\s+install' | sudo bash -s 22
+sudo apt install clang-format-22
+```
+
 ## 许可证
 
 本项目采用 [MIT](./LICENSE) 许可证。
