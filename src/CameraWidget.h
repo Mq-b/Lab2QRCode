@@ -150,6 +150,14 @@ private:
      */
     void selectBestCameraConfigUI(const CameraConfig &bestConfig) const;
 
+    /**
+     * @brief 保存调试帧
+     * 
+     * 当调试模式开启且识别到条码时，保存当前帧到 debug_frames 目录
+     * @param r 识别结果
+     */
+    void saveDebugFrame(const FrameResult &r) const;
+
 private:
     cv::VideoCapture *capture = nullptr;       /**< 摄像头捕获对象，用于获取视频帧 */
     std::atomic_bool running{false};           /**< 控制摄像头捕获循环是否运行的原子布尔值 */
@@ -173,6 +181,7 @@ private:
     QLabel *barcodeStatusLabel;                                             /**< 条码识别状态标签 */
     QTimer *barcodeClearTimer;                                              /**< 条码状态清除定时器 */
     bool isEnhanceEnabled = true;                                           /**< 是否启用图像增强 */
+    bool isDebugMode = false;                                               /**< 是否启用调试模式（保存识别帧） */
 };
 
 #endif // CAMERAWIDGET_H

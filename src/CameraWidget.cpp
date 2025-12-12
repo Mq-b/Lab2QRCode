@@ -320,6 +320,13 @@ CameraWidget::CameraWidget(QWidget *parent)
 
     connect(enhanceAction, &QAction::toggled, this, [this](bool checked) { isEnhanceEnabled = checked; });
 
+    QMenu *debugMenu = menuBar->addMenu("调试");
+    QAction *saveFrameAction = new QAction("保存识别帧", this);
+    saveFrameAction->setCheckable(true);
+    saveFrameAction->setChecked(isDebugMode);
+    debugMenu->addAction(saveFrameAction);
+    connect(saveFrameAction, &QAction::toggled, this, [this](bool checked) { isDebugMode = checked; });
+
     // FrameWidget: 可缩放
     frameWidget = new FrameWidget();
     frameWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -551,16 +558,10 @@ void CameraWidget::updateFrame(const FrameResult &r) const {
             barcodeClearTimer->start(3000);
             return;
         }
-        // 识别到条码，直接保存整个视频帧用于调试
-
-        if (!std::filesystem::exists("debug_frames")) {
-            std::filesystem::create_directory("debug_frames");
+        
+        if (isDebugMode) {
+            saveDebugFrame(r);
         }
-        const std::string filename = std::format(
-            "./debug_frames/scan_{}_{}.png", r.type.toStdString(), sysinfo::getCurrentTimeString("%Y-%m-%d_%H-%M-%S"));
-        spdlog::info(
-            "识别到条码: Type = {}, Content = {} 保存到: {}", r.type.toStdString(), r.content.toStdString(), filename);
-        cv::imwrite(filename, r.frame);
 
         // 更新上一次的记录
         lastContent = r.content;
@@ -770,6 +771,17 @@ void CameraWidget::processFrame(cv::Mat &frame, FrameResult &out) const {
         out.rectifiedImage = RectifyPolygonToRect(frame, bc, isEnhanceEnabled);
         DrawBarcode(frame, bc);
     }
+}
+
+void CameraWidget::saveDebugFrame(const FrameResult &r) const {
+    if (!std::filesystem::exists("debug_frames")) {
+        std::filesystem::create_directory("debug_frames");
+    }
+    const std::string filename = std::format(
+        "./debug_frames/scan_{}_{}.png", r.type.toStdString(), sysinfo::getCurrentTimeString("%Y-%m-%d_%H-%M-%S"));
+    spdlog::info(
+        "识别到条码: Type = {}, Content = {} 保存到: {}", r.type.toStdString(), r.content.toStdString(), filename);
+    cv::imwrite(filename, r.frame);
 }
 
 void CameraWidget::onCameraConfigSelected(CameraConfig config) {
