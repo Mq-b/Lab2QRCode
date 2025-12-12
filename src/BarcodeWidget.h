@@ -1,16 +1,14 @@
 #pragma once
 
-#include <vector>
-
-#include <QWidget>
-#include <ZXing/BarcodeFormat.h>
-#include <opencv2/opencv.hpp>
-#include <qfuturewatcher.h>
-
 #include "CameraWidget.h"
 #include "convert.h"
 #include "mqtt/MQTTMessageWidget.h"
 #include "mqtt/mqtt_client.h"
+
+#include <QWidget>
+#include <ZXing/BarcodeFormat.h>
+#include <qfuturewatcher.h>
+#include <vector>
 
 class QLineEdit;
 class QPushButton;

@@ -4,6 +4,7 @@
 #include "components/message_dialog.h"
 #include "convert.h"
 #include "version_info/version.h"
+
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFileDialog>
@@ -25,9 +26,12 @@
 #include <ZXing/BarcodeFormat.h>
 #include <ZXing/TextUtfEncoding.h>
 #include <magic_enum/magic_enum.hpp>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 #include <ranges>
 #include <spdlog/spdlog.h>
+
 template <typename Ret, typename... Fs>
 requires(std::is_void_v<Ret> || std::is_default_constructible_v<Ret>)
 struct overload_def_noop : private Fs... {

@@ -1,8 +1,10 @@
 #include "FrameWidget.h"
+
 #include <QImage>
 #include <QPainter>
 #include <QStyleOption>
 #include <spdlog/spdlog.h>
+
 namespace {
 
 // 输入 outer rect 和图像宽高，返回居中等比缩放后的 rect

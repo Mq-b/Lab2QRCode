@@ -1,6 +1,5 @@
 #include "BarcodeWidget.h"
 #include "components/UiConfig.h"
-#include "convert.h"
 #include "logging.h"
 #include <QApplication>
 

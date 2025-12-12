@@ -6,7 +6,6 @@
 #define LAB2QRCODE_CONVERT_H
 
 #include <variant>
-#include <vector>
 
 #include <QByteArray>
 #include <QFileInfo>
@@ -16,7 +15,8 @@
 #include <ZXing/ImageView.h>
 #include <ZXing/MultiFormatWriter.h>
 #include <ZXing/ReadBarcode.h>
-#include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
 
 /**
  * @namespace convert

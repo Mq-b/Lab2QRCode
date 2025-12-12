@@ -1,6 +1,6 @@
 #include "about_dialog.h"
 #include "components/UiConfig.h"
-#include <QApplication>
+
 #include <QDateTime>
 #include <QDesktopServices>
 #include <QFile>

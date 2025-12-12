@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 project(Lab2QRCode)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -19,7 +21,7 @@ add_custom_target(
   COMMAND ${CMAKE_COMMAND} -E echo "Running PowerShell script..."
   COMMAND pwsh -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/scripts/build/version_info.ps1
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/version_info
-  COMMENT "powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1"
+  COMMENT "powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/scripts/build/version_info.ps1"
   BYPRODUCTS ${VERSION_CPP})
 
 if(MSVC)
@@ -39,7 +41,14 @@ if(NOT XLSXWRITER_INCLUDE_DIR OR NOT XLSXWRITER_LIBRARY)
   message(FATAL_ERROR "Could not find xlsxwriter library or include directory")
 endif()
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Og")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Og")
+  set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -O0 -Wl,-O0")
+endif()
+
 file(GLOB_RECURSE SOURCES "src/*.cpp")
+list(REMOVE_ITEM SOURCES "${VERSION_CPP}")
 
 add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${VERSION_CPP} "logo.rc")
 add_dependencies(${PROJECT_NAME} RunPowerShellScript)
@@ -56,6 +65,10 @@ target_link_libraries(
           Boost::headers
           Boost::random
           spdlog::spdlog_header_only)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  target_precompile_headers(${PROJECT_NAME} PRIVATE <spdlog/spdlog.h>)
+endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${XLSXWRITER_INCLUDE_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${XLSXWRITER_LIBRARY})

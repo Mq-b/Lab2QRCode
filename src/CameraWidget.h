@@ -4,14 +4,14 @@
 #include "CameraConfig.h"
 #include "FrameWidget.h"
 #include "commondef.h"
+
 #include <QStatusBar>
-#include <QTextEdit>
 #include <QVBoxLayout>
 #include <QWidget>
 #include <ZXing/BarcodeFormat.h>
 #include <atomic>
 #include <future>
-#include <opencv2/opencv.hpp>
+#include <opencv2/videoio.hpp>
 #include <qactiongroup.h>
 #include <qcombobox.h>
 #include <thread>

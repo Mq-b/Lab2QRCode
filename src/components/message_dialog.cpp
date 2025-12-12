@@ -1,4 +1,5 @@
 #include "message_dialog.h"
+
 #include <QApplication>
 #include <QGraphicsDropShadowEffect>
 #include <QHBoxLayout>
@@ -7,6 +8,7 @@
 #include <QScreen>
 #include <QScrollArea>
 #include <QVBoxLayout>
+
 MessageDialog::MessageDialog(QWidget *parent)
     : QDialog(parent) {
     setMinimumSize(400, 300);

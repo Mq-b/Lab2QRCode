@@ -1,8 +1,8 @@
 #include "UiConfig.h"
 #include "../logging.h"
+
 #include <QApplication>
 #include <QFile>
-#include <QFileInfo>
 #include <QFont>
 #include <QFontDatabase>
 #include <QFontInfo>

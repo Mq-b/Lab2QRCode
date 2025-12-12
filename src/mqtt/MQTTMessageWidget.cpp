@@ -1,5 +1,5 @@
-
 #include "MQTTMessageWidget.h"
+
 #include <QFileDialog>
 #include <QTextCodec>
 #include <QTextStream>
