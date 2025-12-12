@@ -558,7 +558,7 @@ void CameraWidget::updateFrame(const FrameResult &r) const {
             barcodeClearTimer->start(3000);
             return;
         }
-        
+
         if (isDebugMode) {
             saveDebugFrame(r);
         }
