@@ -121,11 +121,12 @@ cv::Mat RectifyPolygonToRect(const cv::Mat &img, const ZXing::Barcode &bc, bool 
         cv::Point2f(maxSideLength - 1, maxSideLength - 1),
         cv::Point2f(0, maxSideLength - 1),
     };
+    constexpr float margin = 0.05f;
     const std::vector<cv::Point2f> rectCornersWithMargin = {
-        cv::Point2f(-0.05 * maxSideLength, -0.05 * maxSideLength),
-        cv::Point2f(1.05 * maxSideLength - 1, -0.05 * maxSideLength),
-        cv::Point2f(1.05 * maxSideLength - 1, 1.05 * maxSideLength - 1),
-        cv::Point2f(-0.05 * maxSideLength, 1.05 * maxSideLength - 1)};
+        cv::Point2f(-margin * maxSideLength, -margin * maxSideLength),
+        cv::Point2f((1 + margin) * maxSideLength - 1, -margin * maxSideLength),
+        cv::Point2f((1 + margin) * maxSideLength - 1, (1 + margin) * maxSideLength - 1),
+        cv::Point2f(-margin * maxSideLength, (1 + margin) * maxSideLength - 1)};
     const auto outputSize = static_cast<int>(maxSideLength * 1.1);
     const std::vector<cv::Point2f> outputRect = {
         cv::Point2f(0, 0),
@@ -139,79 +140,91 @@ cv::Mat RectifyPolygonToRect(const cv::Mat &img, const ZXing::Barcode &bc, bool 
     cv::Mat toOutputRectTransform = cv::getPerspectiveTransform(marginBarcodeCorners, outputRect);
     cv::Mat rectifiedImage;
     cv::warpPerspective(img, rectifiedImage, toOutputRectTransform, cv::Size(outputSize, outputSize));
+
     if (!enhance) {
         return rectifiedImage;
     }
 
-    if (rectifiedImage.channels() == 1) {
-        cv::cvtColor(rectifiedImage, rectifiedImage, cv::COLOR_GRAY2BGR);
+    cv::Mat processed;
+    if (rectifiedImage.channels() == 3) {
+        cv::cvtColor(rectifiedImage, processed, cv::COLOR_BGR2GRAY);
     } else if (rectifiedImage.channels() == 4) {
-        cv::cvtColor(rectifiedImage, rectifiedImage, cv::COLOR_BGRA2BGR);
-    } else if (rectifiedImage.channels() != 3) {
-        return rectifiedImage; // 不支持的通道数，直接返回原图
+        cv::cvtColor(rectifiedImage, processed, cv::COLOR_BGRA2GRAY);
+    } else {
+        processed = rectifiedImage.clone();
     }
 
-    std::vector<int> bCount(256, 0), gCount(256, 0), rCount(256, 0);
-    for (int y = 0; y < rectifiedImage.rows; y++) {
-        const auto row = rectifiedImage.ptr<cv::Vec3b>(y);
-        for (int x = 0; x < rectifiedImage.cols; x++) {
-            bCount[row[x][0]]++;
-            gCount[row[x][1]]++;
-            rCount[row[x][2]]++;
+    cv::Scalar meanScalar = cv::mean(processed);
+    double meanBrightness = meanScalar[0];
+
+    // 如果亮度过低（阈值可根据实际环境调整，通常 < 90~100 属于较暗）
+    if (meanBrightness < 80.0) {
+        cv::Mat lookUpTable(1, 256, CV_8U);
+        uchar *p = lookUpTable.ptr();
+        double gamma = 0.45; // 0.4 到 0.6 之间通常效果最好
+        for (int i = 0; i < 256; ++i) {
+            p[i] = cv::saturate_cast<uchar>(pow(i / 255.0, gamma) * 255.0);
         }
+        cv::LUT(processed, lookUpTable, processed);
     }
 
-    const auto calc_lo_hi = [](const std::vector<int> &count) -> std::pair<int, int> {
-        int total = 0;
-        for (int v = 0; v < 256; v++) {
-            total += count[v];
-        }
-        int lo = 0, lo_sum = 0;
-        for (int v = 0; v < 256; v++) {
-            lo_sum += count[v];
-            if (lo_sum >= total * HISTOGRAM_CLIP_THRESHOLD) {
-                lo = v;
-                break;
-            }
-        }
-        int hi = 255, hi_sum = 0;
-        for (int v = 255; v >= 0; v--) {
-            hi_sum += count[v];
-            if (hi_sum >= total * HISTOGRAM_CLIP_THRESHOLD) {
-                hi = v;
-                break;
-            }
-        }
-        return {lo, hi};
-    };
-    const auto [bLow, bHigh] = calc_lo_hi(bCount);
-    const auto [gLow, gHigh] = calc_lo_hi(gCount);
-    const auto [rLow, rHigh] = calc_lo_hi(rCount);
+    // 3. 限制对比度自适应直方图均衡化 (CLAHE)
+    // 提亮后，局部对比度可能仍然不好，CLAHE 是解决光照不均的神器
+    // clipLimit 设为 3.0 以增强细节，tileGridSize 设为 8x8
+    auto clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
+    clahe->apply(processed, processed);
 
-    cv::Mat fimg;
-    rectifiedImage.convertTo(fimg, CV_32F);
     {
-        std::vector<cv::Mat> channels(3);
-        cv::split(fimg, channels);
-        const auto norm_clip = [](cv::Mat &ch, int lo, int hi) {
-            ch = (ch - lo) / (hi - lo);
-            cv::min(ch, 1.0, ch);
-            cv::max(ch, 0.0, ch);
-        };
-        norm_clip(channels[0], bLow, bHigh);
-        norm_clip(channels[1], gLow, gHigh);
-        norm_clip(channels[2], rLow, rHigh);
-        cv::merge(channels, fimg);
+        //初始简单曲线处理
+        constexpr float edge0 = 0.25f;
+        constexpr float edge1 = 0.75f;
+
+        cv::normalize(processed, processed, 0, 255, cv::NORM_MINMAX);
+        processed.convertTo(processed, CV_32F, 1.0 / 255.0);
+        processed.forEach<float>([](float &pixel, const int *position) -> void {
+            float t = (pixel - edge0) / (edge1 - edge0);
+            t = std::clamp(t, 0.0f, 1.0f);
+            pixel = t * t * (3.0f - 2.0f * t);
+        });
+        processed.convertTo(processed, CV_8U, 255.0);
+        cv::threshold(processed, processed, 64, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
     }
 
-    cv::Mat mat1;
-    cv::pow(fimg, 2, mat1);
-    cv::Mat mat2;
-    cv::pow(fimg, 3, mat2);
-    cv::Mat enhanced;
-    cv::Mat(3 * mat1 - 2 * mat2).convertTo(enhanced, CV_8U, 255.0);
+    {
+        processed.convertTo(processed, CV_32F, 1.0 / 255.0);
 
-    return enhanced;
+        //Sharpening Kernal
+        constexpr float reduce_factor = 0.5f;
+        // clang-format off
+        cv::Mat kernel = (cv::Mat_<float>(3, 3) <<
+            0, -reduce_factor, 0,
+            -reduce_factor, 1 + reduce_factor * 4, -reduce_factor,
+            0, -reduce_factor, 0);
+        // clang-format on
+
+        cv::filter2D(processed, processed, CV_32F, kernel);
+    }
+
+    //消去锐化产生的噪点
+    constexpr float edge0 = 0.25f;
+    constexpr float edge1 = 0.85f;
+    processed.forEach<float>([](float &pixel, const int *position) -> void {
+        float t = (pixel - edge0) / (edge1 - edge0);
+        t = std::clamp(t, 0.0f, 1.0f);
+        pixel = t * t * (3.0f - 2.0f * t);
+    });
+
+    //最终的模糊-插值pattern
+    cv::GaussianBlur(processed, processed, cv::Size(3, 3), 0);
+    processed.forEach<float>([](float &pixel, const int *position) -> void {
+        float t = (pixel - edge0) / (edge1 - edge0);
+        t = std::clamp(t, 0.0f, 1.0f);
+        pixel = t * t * (3.0f - 2.0f * t);
+    });
+    processed.convertTo(processed, CV_8U, 255.0);
+
+    cv::cvtColor(processed, processed, cv::COLOR_GRAY2BGR);
+    return processed;
 }
 
 // 构造函数里枚举摄像头
