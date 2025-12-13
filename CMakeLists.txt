@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.10)
 
 project(Lab2QRCode)
 
+include(scripts/cmake/check-format.cmake) # 检查格式，如果格式错误则失败
+include(scripts/cmake/check-format-prebuild.cmake) # 在构建前检查格式，但格式错误仍然能继续构建
+include(scripts/cmake/format-all.cmake) # 格式化所有代码
+include(scripts/cmake/version-info.cmake) # 生成版本信息
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 
@@ -11,16 +16,6 @@ include_directories(include)
 
 set(CMAKE_PREFIX_PATH $ENV{VCPKG_LIB} ${CMAKE_PREFIX_PATH})
 #set(CMAKE_PREFIX_PATH  $ENV{QT5_15_STATIC} ${CMAKE_PREFIX_PATH})
-
-set(VERSION_CPP "${CMAKE_SOURCE_DIR}/src/version_info/version.cpp")
-
-add_custom_target(
-  RunPowerShellScript ALL
-  COMMAND ${CMAKE_COMMAND} -E echo "Running PowerShell script..."
-  COMMAND pwsh -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/scripts/build/version_info.ps1
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/version_info
-  COMMENT "powershell -ExecutionPolicy Bypass -File ${CMAKE_SOURCE_DIR}/version_info.ps1"
-  BYPRODUCTS ${VERSION_CPP})
 
 if(MSVC)
   add_compile_options(/EHsc /utf-8 /bigobj)
@@ -43,8 +38,8 @@ endif()
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${VERSION_CPP} "logo.rc")
-add_dependencies(${PROJECT_NAME} RunPowerShellScript)
+add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${VERSION_INFO_FILE} "logo.rc")
+add_dependencies(${PROJECT_NAME} CheckFormatPrebuild GenVersionInfo)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
   Qt5::Core
