@@ -1,4 +1,5 @@
 #include "CameraWidget.h"
+#include "components/beep.h"
 #include "sysinfo.h"
 #include <QBuffer>
 #include <QCameraInfo>
@@ -558,6 +559,9 @@ void CameraWidget::updateFrame(const FrameResult &r) const {
             barcodeClearTimer->start(3000);
             return;
         }
+
+        // 新条码识别成功时播放 beep
+        playBeep();
 
         if (isDebugMode) {
             saveDebugFrame(r);
