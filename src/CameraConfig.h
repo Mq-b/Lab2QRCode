@@ -2,6 +2,7 @@
 
 #include <QString>
 #include <format>
+#include <unordered_set>
 #include <vector>
 
 struct CameraConfig {
@@ -13,6 +14,8 @@ struct CameraConfig {
     operator QString() const;
 
     operator std::string() const;
+
+    bool operator==(const CameraConfig &other) const;
 
     /**
      * @brief 获取系统中可用摄像头的描述列表
@@ -36,4 +39,11 @@ struct CameraConfig {
      * @return 选择的最佳摄像头配置
      */
     static CameraConfig selectBestCameraConfig(const std::vector<CameraConfig> &configs);
+};
+
+struct CameraConfigHash {
+    std::size_t operator()(const CameraConfig &config) const {
+        return std::hash<int>()(config.width) ^ (std::hash<int>()(config.height) << 1) ^
+               (std::hash<int>()(config.fps) << 2) ^ (std::hash<std::string>()(config.pixelFormat.toStdString()));
+    }
 };

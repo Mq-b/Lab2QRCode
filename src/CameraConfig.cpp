@@ -14,6 +14,10 @@ CameraConfig::operator std::string() const {
     return std::format("{}x{} @ {} fps ({})", width, height, fps, pixelFormat.toStdString());
 }
 
+bool CameraConfig::operator==(const CameraConfig &other) const {
+    return width == other.width && height == other.height && fps == other.fps && pixelFormat == other.pixelFormat;
+}
+
 QStringList CameraConfig::getCameraDescriptions() {
     const auto cameras = QCameraInfo::availableCameras();
     QStringList descriptions;
@@ -26,6 +30,7 @@ QStringList CameraConfig::getCameraDescriptions() {
 std::vector<CameraConfig> CameraConfig::getSupportedCameraConfigs(int cameraIndex) {
     std::vector<CameraConfig> configs;
     QList<QCameraInfo> cameras = QCameraInfo::availableCameras();
+    std::unordered_set<CameraConfig, CameraConfigHash> uniqueConfigs;
 
     if (cameraIndex >= cameras.size()) {
         return configs;
@@ -49,9 +54,13 @@ std::vector<CameraConfig> CameraConfig::getSupportedCameraConfigs(int cameraInde
         config.pixelFormat = magic_enum::enum_name(settings.pixelFormat()).data();
 
         // 添加到列表
-        configs.emplace_back(config);
-
-        spdlog::info("Supported config: {}", static_cast<std::string>(config));
+        // 去重
+        if (uniqueConfigs.insert(config).second) {
+            configs.emplace_back(config);
+            spdlog::info("Accepted config: {}", static_cast<std::string>(config));
+        } else {
+            spdlog::info("Duplicate config {} ignored", static_cast<std::string>(config));
+        }
     }
 
     camera.stop(); // 查询完成，停止摄像头
