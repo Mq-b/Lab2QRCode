@@ -363,6 +363,39 @@ CameraWidget::CameraWidget(QWidget *parent)
 
         resultDisplay->setAlternatingRowColors(true);
         resultDisplay->installEventFilter(this);
+
+        // 增加右键删除功能
+        resultDisplay->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(resultDisplay, &QTableView::customContextMenuRequested, this, [this](const QPoint &pos) {
+            // 1️. 拿到选择模型
+            QItemSelectionModel *sel = resultDisplay->selectionModel();
+            // 2. 重新获取选中行
+            QModelIndexList rows = sel->selectedRows();
+            if (rows.isEmpty()) {
+                return;
+            }
+            // 3. 构造右键菜单
+            QMenu menu(this);
+            QAction *del = menu.addAction(QString("删除选中的 %1 条记录").arg(rows.size()));
+            // 4. 弹出菜单，阻塞等待用户点击
+            QAction *chosen = menu.exec(resultDisplay->viewport()->mapToGlobal(pos));
+            // 5. 执行删除逻辑
+            if (chosen == del) {
+                int ret = QMessageBox::question(
+                    this, "确认删除", "确定要删除选中的扫码结果吗？", QMessageBox::Yes | QMessageBox::No);
+                if (ret == QMessageBox::Yes) {
+                    // 多行删除，排序从行号大的删除，避免出错
+                    std::sort(rows.begin(), rows.end(), [](const QModelIndex &a, const QModelIndex &b) {
+                        return a.row() > b.row();
+                    });
+
+                    for (const QModelIndex &idx : rows) {
+                        resultModel->removeRow(idx.row());
+                    }
+                }
+            }
+        });
+
         mainLayout->addWidget(resultDisplay, 1);
     }
     {
