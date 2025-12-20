@@ -347,7 +347,8 @@ CameraWidget::CameraWidget(QWidget *parent)
 
         resultDisplay = new QTableView(this);
         resultDisplay->setModel(resultModel);
-        resultDisplay->setMaximumHeight(150);
+        //resultDisplay->setMaximumHeight(150);
+        resultDisplay->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         resultDisplay->setSelectionBehavior(QAbstractItemView::SelectRows);
         resultDisplay->setEditTriggers(QAbstractItemView::NoEditTriggers);
         resultDisplay->verticalHeader()->setVisible(false); // 隐藏行号
@@ -362,7 +363,7 @@ CameraWidget::CameraWidget(QWidget *parent)
 
         resultDisplay->setAlternatingRowColors(true);
         resultDisplay->installEventFilter(this);
-        mainLayout->addWidget(resultDisplay);
+        mainLayout->addWidget(resultDisplay, 1);
     }
     {
         statusBar = new QStatusBar(this);
