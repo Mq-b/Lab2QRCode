@@ -158,6 +158,13 @@ private:
      */
     void saveDebugFrame(const FrameResult &r) const;
 
+    /**
+     * @brief 根据表格第一行内容更新静态成员变量 lastContent 和 lastType
+     * 
+     * 在删除结果时进行调用
+     */
+    void updateLastFromModel();
+
 private:
     cv::VideoCapture *capture = nullptr;       /**< 摄像头捕获对象，用于获取视频帧 */
     std::atomic_bool running{false};           /**< 控制摄像头捕获循环是否运行的原子布尔值 */
@@ -182,6 +189,8 @@ private:
     QTimer *barcodeClearTimer;                                              /**< 条码状态清除定时器 */
     bool isEnhanceEnabled = true;                                           /**< 是否启用图像增强 */
     bool isDebugMode = false;                                               /**< 是否启用调试模式（保存识别帧） */
+    static QString lastContent;                                             /**< 用于记录上一次扫码结果内容 */
+    static QString lastType;                                                /**< 用于记录上一次扫码结果类型 */
 };
 
 #endif // CAMERAWIDGET_H

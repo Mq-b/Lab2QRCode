@@ -31,6 +31,10 @@
 
 static constexpr auto HISTOGRAM_CLIP_THRESHOLD = 0.1;
 
+// 类静态成员变量初始化
+QString CameraWidget::lastContent = "";
+QString CameraWidget::lastType = "";
+
 static const std::vector<std::pair<ZXing::BarcodeFormat, QString>> kBarcodeFormatList{
     {ZXing::BarcodeFormat::Aztec,           "Aztec"          },
     {ZXing::BarcodeFormat::Codabar,         "Codabar"        },
@@ -391,9 +395,12 @@ CameraWidget::CameraWidget(QWidget *parent)
 
                     for (const QModelIndex &idx : rows) {
                         resultModel->removeRow(idx.row());
+                        spdlog::info("Delete Row {}", idx.row());
                     }
                 }
             }
+            // 6. 更新 lastContent 和 lastType 为当前第一行内容
+            updateLastFromModel();
         });
 
         mainLayout->addWidget(resultDisplay, 1);
@@ -463,6 +470,31 @@ CameraWidget::CameraWidget(QWidget *parent)
     }
 
     initBeep();
+}
+
+void CameraWidget::updateLastFromModel() {
+    if (resultModel->rowCount() == 0) {
+        // 表格空了，重置
+        lastContent.clear();
+        lastType.clear();
+        spdlog::info("The table is empty");
+        return;
+    }
+
+    // 第 0 行是“最新记录”
+    QStandardItem *typeItem = resultModel->item(0, 2);    // 类型列
+    QStandardItem *contentItem = resultModel->item(0, 3); // 内容列
+
+    if (!typeItem || !contentItem) {
+        lastContent.clear();
+        lastType.clear();
+        spdlog::error("Failed to read typeItem or contentItem");
+        return;
+    }
+
+    lastType = typeItem->text();
+    lastContent = contentItem->text();
+    spdlog::info("Update lastType: {}, lastContent: {}", lastType.toStdString(), lastContent.toStdString());
 }
 
 bool CameraWidget::eventFilter(QObject *obj, QEvent *event) {
@@ -588,9 +620,6 @@ void CameraWidget::updateFrame(const FrameResult &r) const {
                                  .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
 
         // 检查是否与上一条记录相同
-        static QString lastContent;
-        static QString lastType;
-
         if (r.content == lastContent && r.type == lastType) {
             barcodeClearTimer->start(3000);
             return;
