@@ -29,7 +29,7 @@ public slots:
 
 private:
     void setupUI();
-        /**
+    /**
      * @brief QEvent::LanguageChange事件发生时调用，用于刷新语言
      */
     void retranslate();

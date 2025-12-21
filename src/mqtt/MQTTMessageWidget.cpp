@@ -1,9 +1,9 @@
 
 #include "MQTTMessageWidget.h"
+#include <QEvent>
 #include <QFileDialog>
 #include <QTextCodec>
 #include <QTextStream>
-#include <QEvent>
 
 MQTTMessageWidget::MQTTMessageWidget(QWidget *parent)
     : QWidget(parent) {
@@ -74,7 +74,7 @@ void MQTTMessageWidget::retranslate() {
 }
 
 void MQTTMessageWidget::changeEvent(QEvent *event) {
-    if(event->type() == QEvent::LanguageChange){
+    if (event->type() == QEvent::LanguageChange) {
         retranslate();
     }
     QWidget::changeEvent(event);
