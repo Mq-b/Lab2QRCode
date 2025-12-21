@@ -10,7 +10,7 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/build/${CMAKE_BUILD_TYPE}/bin)
 
 include_directories(include)
 
-#set(CMAKE_PREFIX_PATH $ENV{VCPKG_LIB} ${CMAKE_PREFIX_PATH})
+set(CMAKE_PREFIX_PATH $ENV{VCPKG_LIB} ${CMAKE_PREFIX_PATH})
 #set(CMAKE_PREFIX_PATH  $ENV{QT5_15_STATIC} ${CMAKE_PREFIX_PATH})
 
 set(VERSION_CPP "${CMAKE_SOURCE_DIR}/src/version_info/version.cpp")
@@ -83,7 +83,6 @@ set(TS_FILES
 add_custom_target(update_translations ALL
     COMMAND ${Qt5_LUPDATE_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/src
-            ${CMAKE_CURRENT_SOURCE_DIR}/include
             -ts ${TS_FILES}
             -no-obsolete
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

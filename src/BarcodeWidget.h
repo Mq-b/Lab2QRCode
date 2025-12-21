@@ -141,11 +141,11 @@ private:
 private:
     QStringList lastSelectedFiles; /**< 上次选择的文件路径列表 */
 
-    QMenuBar *menuBar;  /**< 主菜单栏 */
-    QMenu *helpMenu;    /**< 帮助菜单 */
-    QMenu *toolsMenu;   /**< 工具菜单 */
-    QMenu *settingMenu; /**< 设置菜单 */
-    QMenu* languageSubMenu; /**< 语言菜单 */
+    QMenuBar *menuBar;      /**< 主菜单栏 */
+    QMenu *helpMenu;        /**< 帮助菜单 */
+    QMenu *toolsMenu;       /**< 工具菜单 */
+    QMenu *settingMenu;     /**< 设置菜单 */
+    QMenu *languageSubMenu; /**< 语言菜单 */
 
     QAction *aboutAction;          /**< "关于"操作 */
     QAction *debugMqttAction;      /**< 打开MQTT消息展示窗口 */

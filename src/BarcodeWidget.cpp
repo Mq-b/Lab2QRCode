@@ -1,4 +1,5 @@
 #include "BarcodeWidget.h"
+#include "LanguageManager.h"
 #include "about_dialog.h"
 #include "components/UiConfig.h"
 #include "components/message_dialog.h"
@@ -28,7 +29,6 @@
 #include <opencv2/opencv.hpp>
 #include <ranges>
 #include <spdlog/spdlog.h>
-#include "LanguageManager.h"
 
 template <typename Ret, typename... Fs>
 requires(std::is_void_v<Ret> || std::is_default_constructible_v<Ret>)
@@ -359,7 +359,7 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     // 从而BarCodeWidget::retranslate函数被调用
     // BarCodeWidget::retranslate函数调用前需确保BarCodeWidget的所有组件完成初始化
     // 否则会访问空指针导致程序崩溃
-    LanguageManager& languageMgr = LanguageManager::instance();
+    LanguageManager &languageMgr = LanguageManager::instance();
     languageMgr.init();
     // 初始化多语言管理器的Action
     setupLanguageAction();
@@ -641,7 +641,8 @@ void BarcodeWidget::onSaveClicked() {
         auto fileName = std::visit<QString>(
             overload_def_noop{std::in_place_type<QString>,
                               [&](const QImage &) {
-                                  return QFileDialog::getSaveFileName(this, tr("保存图片"), defName, "PNG Images (*.png)");
+                                  return QFileDialog::getSaveFileName(
+                                      this, tr("保存图片"), defName, "PNG Images (*.png)");
                               },
                               [&](const QByteArray &) {
                                   return QFileDialog::getSaveFileName(
@@ -1141,8 +1142,7 @@ ZXing::BarcodeFormat BarcodeWidget::stringToBarcodeFormat(const QString &formatS
 }
 
 void BarcodeWidget::setupLanguageAction() {
-    LanguageManager& languageMgr = LanguageManager::instance();
-
+    LanguageManager &languageMgr = LanguageManager::instance();
 
     QActionGroup *langGroup = new QActionGroup(this);
     langGroup->setExclusive(true);
@@ -1151,7 +1151,9 @@ void BarcodeWidget::setupLanguageAction() {
 
     for (const QString &displayName : displayNames) {
         QString localeKey = languageMgr.localeFromDisplayName(displayName);
-        if (localeKey.isEmpty()) continue;
+        if (localeKey.isEmpty()) {
+            continue;
+        }
 
         QAction *action = new QAction(displayName, this);
         action->setCheckable(true);
@@ -1192,8 +1194,8 @@ void BarcodeWidget::retranslate() {
     renderResults();
 }
 
-void BarcodeWidget::changeEvent(QEvent * event) {
-    if(event->type() == QEvent::LanguageChange){
+void BarcodeWidget::changeEvent(QEvent *event) {
+    if (event->type() == QEvent::LanguageChange) {
         retranslate();
     }
     QWidget::changeEvent(event);
