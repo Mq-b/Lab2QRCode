@@ -3,11 +3,12 @@
 #include <QFileDialog>
 #include <QTextCodec>
 #include <QTextStream>
+#include <QEvent>
 
 MQTTMessageWidget::MQTTMessageWidget(QWidget *parent)
     : QWidget(parent) {
     setupUI();
-    setWindowTitle("MQTT消息监控");
+    setWindowTitle(tr("MQTT消息监控"));
     setMinimumSize(800, 600);
 }
 
@@ -15,7 +16,7 @@ void MQTTMessageWidget::setupUI() {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // 状态栏
-    statusLabel = new QLabel("就绪", this);
+    statusLabel = new QLabel(tr("就绪"), this);
 
     // 选项卡
     tabWidget = new QTabWidget(this);
@@ -23,7 +24,7 @@ void MQTTMessageWidget::setupUI() {
     // 表格视图
     tableWidget = new QTableWidget(this);
     tableWidget->setColumnCount(4);
-    tableWidget->setHorizontalHeaderLabels({"时间", "主题", "消息内容", "长度"});
+    tableWidget->setHorizontalHeaderLabels({tr("时间"), tr("主题"), tr("消息内容"), tr("长度")});
 
     // 智能列宽设置
     tableWidget->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents); // 时间列根据内容调整
@@ -41,13 +42,13 @@ void MQTTMessageWidget::setupUI() {
     rawTextView->setReadOnly(true);
     rawTextView->setFont(QFont("Consolas", 10));
 
-    tabWidget->addTab(tableWidget, "表格视图");
-    tabWidget->addTab(rawTextView, "原始数据");
+    tableTabIndex = tabWidget->addTab(tableWidget, tr("表格视图"));
+    rawTabIndex = tabWidget->addTab(rawTextView, tr("原始数据"));
 
     // 按钮区域
     QHBoxLayout *buttonLayout = new QHBoxLayout();
-    clearButton = new QPushButton("清空消息", this);
-    exportButton = new QPushButton("导出数据", this);
+    clearButton = new QPushButton(tr("清空消息"), this);
+    exportButton = new QPushButton(tr("导出数据"), this);
 
     buttonLayout->addWidget(clearButton);
     buttonLayout->addWidget(exportButton);
@@ -60,6 +61,23 @@ void MQTTMessageWidget::setupUI() {
     // 连接信号槽
     connect(clearButton, &QPushButton::clicked, this, &MQTTMessageWidget::clearMessages);
     connect(exportButton, &QPushButton::clicked, this, &MQTTMessageWidget::exportMessages);
+}
+
+void MQTTMessageWidget::retranslate() {
+    setWindowTitle(tr("MQTT消息监控"));
+    statusLabel->setText(tr("就绪"));
+    tableWidget->setHorizontalHeaderLabels({tr("时间"), tr("主题"), tr("消息内容"), tr("长度")});
+    tabWidget->setTabText(tableTabIndex, tr("表格视图"));
+    tabWidget->setTabText(rawTabIndex, tr("原始数据"));
+    clearButton->setText(tr("清空消息"));
+    exportButton->setText(tr("导出数据"));
+}
+
+void MQTTMessageWidget::changeEvent(QEvent *event) {
+    if(event->type() == QEvent::LanguageChange){
+        retranslate();
+    }
+    QWidget::changeEvent(event);
 }
 
 void MQTTMessageWidget::addMessage(const QString &topic, const QByteArray &rawData) const {
@@ -118,11 +136,11 @@ void MQTTMessageWidget::addMessage(const QString &topic, const QByteArray &rawDa
             // 大二进制数据：显示部分hex
             hexPreview = rawData.left(8).toHex(' ').toUpper() + " ... " + rawData.right(8).toHex(' ').toUpper();
         }
-        displayPayload = QString("<二进制数据，%1 字节> [%2]").arg(rawData.size()).arg(hexPreview);
+        displayPayload = QString(tr("<二进制数据，%1 字节> [%2]")).arg(rawData.size()).arg(hexPreview);
     } else if (rawData.size() > 1000 && isLikelyText) {
         // 大文本数据：截断显示
         QString truncatedText = QString::fromUtf8(rawData.constData(), qMin(rawData.size(), 1000));
-        displayPayload = truncatedText + QString("... [截断，总长度: %1 字节]").arg(rawData.size());
+        displayPayload = truncatedText + QString(tr("... [截断，总长度: %1 字节]")).arg(rawData.size());
     } else {
         // 正常文本数据
         displayPayload = QString::fromUtf8(rawData);
@@ -144,7 +162,7 @@ void MQTTMessageWidget::addMessage(const QString &topic, const QByteArray &rawDa
     if (isBinary) {
         // 在原始视图中也显示hex格式
         rawTextView->append(QString("[%1] %2: %3").arg(timestamp, topic, displayPayload));
-        rawTextView->append(QString("完整Hex: %1").arg(QString(rawData.toHex(' ').toUpper())));
+        rawTextView->append(QString(tr("完整Hex: %1")).arg(QString(rawData.toHex(' ').toUpper())));
     } else {
         rawTextView->append(QString("[%1] %2: %3").arg(timestamp, topic, displayPayload));
     }
@@ -152,24 +170,24 @@ void MQTTMessageWidget::addMessage(const QString &topic, const QByteArray &rawDa
     rawTextView->verticalScrollBar()->setValue(rawTextView->verticalScrollBar()->maximum());
 
     // 更新状态
-    statusLabel->setText(QString("已接收 %1 条消息").arg(row + 1));
+    statusLabel->setText(QString(tr("已接收 %1 条消息")).arg(row + 1));
 }
 
 void MQTTMessageWidget::clearMessages() {
     tableWidget->setRowCount(0);
     rawTextView->clear();
-    statusLabel->setText("消息已清空");
+    statusLabel->setText(tr("消息已清空"));
 }
 
 void MQTTMessageWidget::exportMessages() {
-    QString fileName = QFileDialog::getSaveFileName(this, "导出消息", "mqtt_messages.txt", "文本文件 (*.txt)");
+    QString fileName = QFileDialog::getSaveFileName(this, tr("导出消息"), "mqtt_messages.txt", tr("文本文件 (*.txt)"));
     if (!fileName.isEmpty()) {
         QFile file(fileName);
         if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream stream(&file);
             stream << rawTextView->toPlainText();
             file.close();
-            statusLabel->setText("消息已导出到: " + fileName);
+            statusLabel->setText(tr("消息已导出到: ") + fileName);
         }
     }
 }

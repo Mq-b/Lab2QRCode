@@ -15,7 +15,7 @@
 
 AboutDialog::AboutDialog(QWidget *parent)
     : QDialog(parent) {
-    setWindowTitle("关于 Lab2QRCode");
+    setWindowTitle(tr("关于 Lab2QRCode"));
     setFixedSize(480, 520);
 
     initUI();
@@ -51,14 +51,14 @@ void AboutDialog::setVersionInfo(const QString &tag,
             }
 
             // 重新添加信息行
-            addInfoRow(infoLayout, 0, "📌 版本标签:", m_tag);
-            addInfoRow(infoLayout, 1, "🔑 Git Hash:", m_hash.length() > 8 ? m_hash.left(8) + "..." : m_hash);
-            addInfoRow(infoLayout, 2, "🌿 代码分支:", m_branch);
-            addInfoRow(infoLayout, 3, "⏰ 提交时间:", formatTime(m_commitTime));
-            addInfoRow(infoLayout, 4, "🔨 构建时间:", formatTime(m_buildTime));
-            addInfoRow(infoLayout, 5, "🖥️ 系统版本:", formatTime(m_systemVersion));
-            addInfoRow(infoLayout, 6, "⚙️ 内核版本:", formatTime(m_kernelVersion));
-            addInfoRow(infoLayout, 7, "🧩 架构类型:", formatTime(m_architecture));
+            addInfoRow(infoLayout, 0, tr("📌 版本标签:"), m_tag);
+            addInfoRow(infoLayout, 1, tr("🔑 Git Hash:"), m_hash.length() > 8 ? m_hash.left(8) + "..." : m_hash);
+            addInfoRow(infoLayout, 2, tr("🌿 代码分支:"), m_branch);
+            addInfoRow(infoLayout, 3, tr("⏰ 提交时间:"), formatTime(m_commitTime));
+            addInfoRow(infoLayout, 4, tr("🔨 构建时间:"), formatTime(m_buildTime));
+            addInfoRow(infoLayout, 5, tr("🖥️ 系统版本:"), formatTime(m_systemVersion));
+            addInfoRow(infoLayout, 6, tr("⚙️ 内核版本:"), formatTime(m_kernelVersion));
+            addInfoRow(infoLayout, 7, tr("🧩 架构类型:"), formatTime(m_architecture));
         }
     }
 }
@@ -73,7 +73,7 @@ void AboutDialog::initUI() {
     m_titleLabel->setAlignment(Qt::AlignCenter);
     mainLayout->addWidget(m_titleLabel);
 
-    m_subtitleLabel = new QLabel("二维码工具 - 文件转二维码解决方案");
+    m_subtitleLabel = new QLabel(tr("二维码工具 - 文件转二维码解决方案"));
     m_subtitleLabel->setObjectName("subtitle");
     m_subtitleLabel->setAlignment(Qt::AlignCenter);
     mainLayout->addWidget(m_subtitleLabel);
@@ -99,7 +99,7 @@ void AboutDialog::initUI() {
     mainLayout->addWidget(separator2);
 
     // 作者信息
-    m_authorLabel = new QLabel("👨‍💻 作者: mq白");
+    m_authorLabel = new QLabel(tr("👨‍💻 作者: mq白"));
     m_authorLabel->setObjectName("author");
     m_authorLabel->setAlignment(Qt::AlignCenter);
     mainLayout->addWidget(m_authorLabel);
@@ -118,11 +118,11 @@ void AboutDialog::initUI() {
     QHBoxLayout *buttonLayout = new QHBoxLayout();
     buttonLayout->addStretch();
 
-    m_closeButton = new QPushButton("关闭");
+    m_closeButton = new QPushButton(tr("关闭"));
     connect(m_closeButton, &QPushButton::clicked, this, &AboutDialog::accept);
     buttonLayout->addWidget(m_closeButton);
 
-    m_githubButton = new QPushButton("访问 GitHub");
+    m_githubButton = new QPushButton(tr("访问 GitHub"));
     connect(m_githubButton, &QPushButton::clicked, this, &AboutDialog::onGithubClicked);
     buttonLayout->addWidget(m_githubButton);
 
@@ -161,7 +161,7 @@ void AboutDialog::addInfoRow(QGridLayout *layout, int row, const QString &label,
 
 QString AboutDialog::formatTime(const QString &timeStr) const {
     if (timeStr.isEmpty()) {
-        return "未知";
+        return tr("未知");
     }
 
     // 如果时间字符串包含T（ISO8601格式），进行格式化

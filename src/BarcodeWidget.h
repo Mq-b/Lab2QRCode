@@ -123,12 +123,29 @@ private slots:
     static ZXing::BarcodeFormat stringToBarcodeFormat(const QString &formatStr);
 
 private:
+    /**
+     * @brief 初始化语言切换的Action
+     */
+    void setupLanguageAction();
+
+    /**
+     * @brief QEvent::LanguageChange事件发生时调用，用于刷新语言
+     */
+    void retranslate();
+
+    /**
+     * @brief 重写事件改变函数
+     */
+    void changeEvent(QEvent *event) override;
+
+private:
     QStringList lastSelectedFiles; /**< 上次选择的文件路径列表 */
 
     QMenuBar *menuBar;  /**< 主菜单栏 */
     QMenu *helpMenu;    /**< 帮助菜单 */
     QMenu *toolsMenu;   /**< 工具菜单 */
     QMenu *settingMenu; /**< 设置菜单 */
+    QMenu* languageSubMenu; /**< 语言菜单 */
 
     QAction *aboutAction;          /**< "关于"操作 */
     QAction *debugMqttAction;      /**< 打开MQTT消息展示窗口 */
@@ -137,9 +154,14 @@ private:
     QAction *directTextAction;     /**< 启用文本输入*/
 
     QLineEdit *filePathEdit;                                                  /**< 文件路径输入框 */
+    QPushButton *browseButton;                                                /**< 浏览按钮 */
     QPushButton *generateButton;                                              /**< 生成条码按钮 */
     QPushButton *decodeToChemFile;                                            /**< 解码并保存为化验文件 */
     QPushButton *saveButton;                                                  /**< 保存条码图片按钮 */
+    QLabel *emptyLabel;                                                       /**< 图片展示区域空白时标签 */
+    QLabel *formatLabel;                                                      /**< 选择条码类型标签 */
+    QLabel *widthLabel;                                                       /**< 宽度标签 */
+    QLabel *heightLabel;                                                      /**< 高度标签 */
     QProgressBar *progressBar;                                                /**< 异步进度条 */
     std::vector<convert::result_data_entry> lastResults;                      /**< 上次解码结果 */
     QScrollArea *scrollArea;                                                  /**< 滚动区域 */

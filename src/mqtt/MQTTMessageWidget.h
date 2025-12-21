@@ -29,6 +29,15 @@ public slots:
 
 private:
     void setupUI();
+        /**
+     * @brief QEvent::LanguageChange事件发生时调用，用于刷新语言
+     */
+    void retranslate();
+
+    /**
+     * @brief 重写事件改变函数
+     */
+    void changeEvent(QEvent *event) override;
 
     QTabWidget *tabWidget;
     QTableWidget *tableWidget;
@@ -36,4 +45,6 @@ private:
     QPushButton *clearButton;
     QPushButton *exportButton;
     QLabel *statusLabel;
+    int tableTabIndex;
+    int rawTabIndex;
 };

@@ -164,6 +164,14 @@ private:
      * 在删除结果时进行调用
      */
     void updateLastFromModel();
+    /** 
+     * @brief QEvent::LanguageChange事件发生时调用，用于刷新语言
+     */
+    void retranslate();
+    /**
+     * @brief 重写事件改变函数
+     */
+    void changeEvent(QEvent *event) override;
 
 private:
     cv::VideoCapture *capture = nullptr;       /**< 摄像头捕获对象，用于获取视频帧 */
@@ -180,6 +188,16 @@ private:
     QMenuBar *menuBar;                         /**< 菜单栏组件 */
     QMenu *cameraMenu;                         /**< 摄像头选择菜单 */
     QMenu *cameraConfigMenu;                   /**< 摄像头配置选择菜单 */
+    QMenu *scanMenu;                           /**< 二维码类型菜单 */
+    QAction *selectAllAction;                  /**< 全选按钮 */
+    QAction *clearAction;                      /**< 清空按钮 */
+    QMenu *postProcessingMenu;                 /**< 后处理菜单 */
+    QAction *enhanceAction;                    /**< 图像增强按钮 */
+    QMenu *debugMenu;                          /**< 调试菜单 */
+    QAction *saveFrameAction;                  /**< 保存识别帧按钮 */
+    QToolButton *exportButton;                 /**< 导出按钮 */
+    QAction *exportHtmlAction;                 /**< 导出Html按钮 */
+    QAction *exportXlsxAction;                 /**< 导出Xlsx按钮 */
     QActionGroup *cameraActionGroup = nullptr; /**< 摄像头配置ActionGroup */
     int currentCameraIndex = 0;                /**< 当前选择的摄像头索引 */
     QComboBox *barcodeTypeCombo = nullptr;     /**< 条码类型选择组合框 */

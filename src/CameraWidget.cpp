@@ -222,30 +222,30 @@ cv::Mat RectifyPolygonToRect(const cv::Mat &img, const ZXing::Barcode &bc, bool 
 // 构造函数里枚举摄像头
 CameraWidget::CameraWidget(QWidget *parent)
     : QWidget(parent) {
-    setWindowTitle("摄像头预览");
+    setWindowTitle(tr("摄像头预览"));
     setMinimumSize(800, 600);
     this->installEventFilter(this);
 
     mainLayout = new QVBoxLayout(this);
     menuBar = new QMenuBar(this);
 
-    cameraMenu = new QMenu("摄像头", this);
+    cameraMenu = new QMenu(tr("摄像头"), this);
     menuBar->addMenu(cameraMenu);
 
-    cameraConfigMenu = new QMenu("显示设置", this);
+    cameraConfigMenu = new QMenu(tr("显示设置"), this);
     menuBar->addMenu(cameraConfigMenu);
 
     mainLayout->setMenuBar(menuBar); // 将菜单栏加到窗口布局
 
     // 菜单栏
-    QMenu *scanMenu = menuBar->addMenu("二维码类型");
+    scanMenu = menuBar->addMenu(tr("二维码类型"));
 
     // 全选按钮
-    QAction *selectAllAction = new QAction("全选", this);
+    selectAllAction = new QAction(tr("全选"), this);
     scanMenu->addAction(selectAllAction);
 
     // 清空按钮
-    QAction *clearAction = new QAction("清空", this);
+    clearAction = new QAction(tr("清空"), this);
     scanMenu->addAction(clearAction);
 
     // 添加分隔符
@@ -316,17 +316,17 @@ CameraWidget::CameraWidget(QWidget *parent)
         });
     }
 
-    QMenu *postProcessingMenu = menuBar->addMenu("后处理");
+    postProcessingMenu = menuBar->addMenu(tr("后处理"));
 
-    QAction *enhanceAction = new QAction("图像增强", this);
+    enhanceAction = new QAction(tr("图像增强"), this);
     enhanceAction->setCheckable(true);
     enhanceAction->setChecked(isEnhanceEnabled);
     postProcessingMenu->addAction(enhanceAction);
 
     connect(enhanceAction, &QAction::toggled, this, [this](bool checked) { isEnhanceEnabled = checked; });
 
-    QMenu *debugMenu = menuBar->addMenu("调试");
-    QAction *saveFrameAction = new QAction("保存识别帧", this);
+    debugMenu = menuBar->addMenu(tr("调试"));
+    saveFrameAction = new QAction(tr("保存识别帧"), this);
     saveFrameAction->setCheckable(true);
     saveFrameAction->setChecked(isDebugMode);
     debugMenu->addAction(saveFrameAction);
@@ -340,13 +340,13 @@ CameraWidget::CameraWidget(QWidget *parent)
     {
         resultModel = new QStandardItemModel(0, 7, this); // 行，列
         resultModel->setHorizontalHeaderLabels({
-            "时间",
-            "图像",
-            "类型",
-            "内容",
-            "[隐藏] PNG 数据",
-            "[隐藏] 图片宽度",
-            "[隐藏] 图片高度",
+            tr("时间"),
+            tr("图像"),
+            tr("类型"),
+            tr("内容"),
+            tr("[隐藏] PNG 数据"),
+            tr("[隐藏] 图片宽度"),
+            tr("[隐藏] 图片高度"),
         });
 
         resultDisplay = new QTableView(this);
@@ -409,7 +409,7 @@ CameraWidget::CameraWidget(QWidget *parent)
         statusBar = new QStatusBar(this);
 
         // 创建相机状态标签（左对齐）
-        cameraStatusLabel = new QLabel("摄像头就绪...", this);
+        cameraStatusLabel = new QLabel(tr("摄像头就绪..."), this);
         statusBar->addWidget(cameraStatusLabel); // 默认左对齐
 
         // 添加弹簧将条码状态推到右边
@@ -431,11 +431,11 @@ CameraWidget::CameraWidget(QWidget *parent)
         });
 
         // 导出按钮（HTML / XLSX）
-        QToolButton *exportButton = new QToolButton(this);
-        exportButton->setText("导出");
+        exportButton = new QToolButton(this);
+        exportButton->setText(tr("导出"));
         QMenu *exportMenu = new QMenu(exportButton);
-        QAction *exportHtmlAction = new QAction("导出 HTML (.html)", exportMenu);
-        QAction *exportXlsxAction = new QAction("导出 XLSX (.xlsx)", exportMenu);
+        exportHtmlAction = new QAction(tr("导出 HTML (.html)"), exportMenu);
+        exportXlsxAction = new QAction(tr("导出 XLSX (.xlsx)"), exportMenu);
         exportMenu->addAction(exportHtmlAction);
         exportMenu->addAction(exportXlsxAction);
         exportButton->setMenu(exportMenu);
@@ -445,12 +445,12 @@ CameraWidget::CameraWidget(QWidget *parent)
         connect(exportHtmlAction, &QAction::triggered, this, [this]() {
             const QString def = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) +
                                 QDir::separator() + "scan_results.html";
-            const QString path = QFileDialog::getSaveFileName(this, "保存为 HTML (.html)", def, "HTML 文件 (*.html)");
+            const QString path = QFileDialog::getSaveFileName(this, tr("保存为 HTML (.html)"), def, tr("HTML 文件 (*.html)"));
             if (!path.isEmpty()) {
                 if (exportResultsToHtml(path)) {
-                    QMessageBox::information(this, "导出完成", "已导出 HTML 文件：\n" + path);
+                    QMessageBox::information(this, tr("导出完成"), tr("已导出 HTML 文件：\n") + path);
                 } else {
-                    QMessageBox::warning(this, "导出失败", "导出 HTML 文件失败：\n" + path);
+                    QMessageBox::warning(this, tr("导出失败"), tr("导出 HTML 文件失败：\n") + path);
                 }
             }
         });
@@ -458,12 +458,12 @@ CameraWidget::CameraWidget(QWidget *parent)
         connect(exportXlsxAction, &QAction::triggered, this, [this]() {
             const QString def = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation) +
                                 QDir::separator() + "scan_results.xlsx";
-            const QString path = QFileDialog::getSaveFileName(this, "保存为 XLSX (.xlsx)", def, "Excel 文件 (*.xlsx)");
+            const QString path = QFileDialog::getSaveFileName(this, tr("保存为 XLSX (.xlsx)"), def, tr("Excel 文件 (*.xlsx)"));
             if (!path.isEmpty()) {
                 if (exportResultsToXlsx(path)) {
-                    QMessageBox::information(this, "导出完成", "已导出 XLSX 文件：\n" + path);
+                    QMessageBox::information(this, tr("导出完成"), tr("已导出 XLSX 文件：\n") + path);
                 } else {
-                    QMessageBox::warning(this, "导出失败", "导出 XLSX 文件失败：\n" + path);
+                    QMessageBox::warning(this, tr("导出失败"), tr("导出 XLSX 文件失败：\n") + path);
                 }
             }
         });
@@ -546,7 +546,7 @@ void CameraWidget::startCamera(int camIndex) {
             QMetaObject::invokeMethod(
                 this,
                 [this] {
-                    QMessageBox::warning(this, "错误", "无法打开摄像头");
+                    QMessageBox::warning(this, tr("错误"), tr("无法打开摄像头"));
                     cameraStarted = false;
                 },
                 Qt::QueuedConnection);
@@ -575,7 +575,7 @@ void CameraWidget::startCamera(int camIndex) {
         QMetaObject::invokeMethod(
             this,
             [this] {
-                cameraStatusLabel->setText("摄像头已启动");
+                cameraStatusLabel->setText(tr("摄像头已启动"));
                 captureThread = std::thread(&CameraWidget::captureLoop, this);
             },
             Qt::QueuedConnection);
@@ -601,20 +601,20 @@ void CameraWidget::stopCamera() {
     capture = nullptr;
     cameraStarted = false;
 
-    cameraStatusLabel->setText("摄像头已停止");
+    cameraStatusLabel->setText(tr("摄像头已停止"));
 }
 
 void CameraWidget::updateFrame(const FrameResult &r) const {
     // 显示视频帧
     frameWidget->setFrame(r.frame);
 
-    cameraStatusLabel->setText("摄像头运行中...");
+    cameraStatusLabel->setText(tr("摄像头运行中..."));
 
     if (r.hasBarcode) {
-        barcodeStatusLabel->setText("检测到 " + r.type + " 码");
+        barcodeStatusLabel->setText(tr("检测到 ") + r.type + tr(" 码"));
         barcodeStatusLabel->setStyleSheet("color: green; font-weight: bold;");
 
-        QString resultText = QString("条码类型: %1\n内容: %2\n时间: %3\n------------------------\n")
+        QString resultText = QString(tr("条码类型: %1\n内容: %2\n时间: %3\n------------------------\n"))
                                  .arg(r.type)
                                  .arg(r.content)
                                  .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"));
@@ -749,17 +749,17 @@ bool CameraWidget::exportResultsToXlsx(const QString &filePath) {
     format_set_align(center_wrap_format, LXW_ALIGN_CENTER);
     format_set_align(center_wrap_format, LXW_ALIGN_VERTICAL_CENTER);
     format_set_text_wrap(center_wrap_format);
-    lxw_worksheet *worksheet = workbook_add_worksheet(workbook, "扫描结果");
+    lxw_worksheet *worksheet = workbook_add_worksheet(workbook, tr("扫描结果").toStdString().c_str());
 
     worksheet_set_column(worksheet, 0, 0, 9, center_format);
     worksheet_set_column_pixels(worksheet, 1, 1, 150, center_format);
     worksheet_set_column(worksheet, 2, 2, 9, center_format);
     worksheet_set_column(worksheet, 3, 3, 120, center_wrap_format);
 
-    worksheet_write_string(worksheet, 0, 0, "时间", center_format);
-    worksheet_write_string(worksheet, 0, 1, "图像", center_format);
-    worksheet_write_string(worksheet, 0, 2, "类型", center_format);
-    worksheet_write_string(worksheet, 0, 3, "内容", center_format);
+    worksheet_write_string(worksheet, 0, 0, tr("时间").toStdString().c_str(), center_format);
+    worksheet_write_string(worksheet, 0, 1, tr("图像").toStdString().c_str(), center_format);
+    worksheet_write_string(worksheet, 0, 2, tr("类型").toStdString().c_str(), center_format);
+    worksheet_write_string(worksheet, 0, 3, tr("内容").toStdString().c_str(), center_format);
 
     for (int r = 0; r < resultModel->rowCount(); r++) {
         const int row = r + 1;
@@ -851,6 +851,39 @@ void CameraWidget::saveDebugFrame(const FrameResult &r) const {
     spdlog::info(
         "识别到条码: Type = {}, Content = {} 保存到: {}", r.type.toStdString(), r.content.toStdString(), filename);
     cv::imwrite(filename, r.frame);
+}
+
+void CameraWidget::retranslate() {
+    setWindowTitle(tr("摄像头预览"));
+    cameraMenu->setTitle(tr("摄像头"));
+    cameraConfigMenu->setTitle(tr("显示设置"));
+    scanMenu->setTitle(tr("二维码类型"));
+    selectAllAction->setText(tr("全选"));
+    clearAction->setText(tr("清空"));
+    postProcessingMenu->setTitle(tr("后处理"));
+    enhanceAction->setText(tr("图像增强"));
+    debugMenu->setTitle(tr("调试"));
+    saveFrameAction->setText(tr("保存识别帧"));
+    resultModel->setHorizontalHeaderLabels({
+        tr("时间"),
+        tr("图像"),
+        tr("类型"),
+        tr("内容"),
+        tr("[隐藏] PNG 数据"),
+        tr("[隐藏] 图片宽度"),
+        tr("[隐藏] 图片高度"),
+    });
+    cameraStatusLabel->setText(tr("摄像头就绪..."));
+    exportButton->setText(tr("导出"));
+    exportHtmlAction->setText(tr("导出 HTML (.html)"));
+    exportXlsxAction->setText(tr("导出 XLSX (.xlsx)"));
+}
+
+void CameraWidget::changeEvent(QEvent *event) {
+    if(event->type() == QEvent::LanguageChange){
+        retranslate();
+    }
+    QWidget::changeEvent(event);
 }
 
 void CameraWidget::onCameraConfigSelected(CameraConfig config) {

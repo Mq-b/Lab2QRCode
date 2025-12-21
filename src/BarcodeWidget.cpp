@@ -28,6 +28,8 @@
 #include <opencv2/opencv.hpp>
 #include <ranges>
 #include <spdlog/spdlog.h>
+#include "LanguageManager.h"
+
 template <typename Ret, typename... Fs>
 requires(std::is_void_v<Ret> || std::is_default_constructible_v<Ret>)
 struct overload_def_noop : private Fs... {
@@ -118,21 +120,22 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     setMinimumSize(500, 600);
 
     menuBar = new QMenuBar();
-    helpMenu = menuBar->addMenu("帮助");
-    toolsMenu = menuBar->addMenu("工具");
-    settingMenu = menuBar->addMenu("设置");
+    helpMenu = menuBar->addMenu(tr("帮助"));
+    toolsMenu = menuBar->addMenu(tr("工具"));
+    settingMenu = menuBar->addMenu(tr("设置"));
+    languageSubMenu = settingMenu->addMenu(tr("语言"));
 
     menuBar->setFont(Ui::getAppFont(12));
 
-    aboutAction = new QAction("关于软件", this);
-    debugMqttAction = new QAction("MQTT实时消息监控窗口", this);
-    openCameraScanAction = new QAction("打开摄像头扫码", this);
+    aboutAction = new QAction(tr("关于软件"), this);
+    debugMqttAction = new QAction(tr("MQTT实时消息监控窗口"), this);
+    openCameraScanAction = new QAction(tr("打开摄像头扫码"), this);
     // base64勾选，默认勾选
-    base64CheckAcion = new QAction("Base64", this);
+    base64CheckAcion = new QAction(tr("Base64"), this);
     base64CheckAcion->setCheckable(true);
     base64CheckAcion->setChecked(true); // 默认勾选
 
-    directTextAction = new QAction("文本输入", this);
+    directTextAction = new QAction(tr("文本输入"), this);
     directTextAction->setCheckable(true);
     directTextAction->setChecked(false); // 默认不勾选
 
@@ -159,12 +162,12 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
 
     auto *fileLayout = new QHBoxLayout();
     filePathEdit = new QLineEdit(this);
-    filePathEdit->setPlaceholderText("选择一个文件或图片");
+    filePathEdit->setPlaceholderText(tr("选择一个文件或图片"));
     filePathEdit->setFont(Ui::getAppFont(14));
     filePathEdit->setStyleSheet(
         "QLineEdit { border: 1px solid #ccc; border-radius: 5px; padding: 5px; background-color: #f9f9f9; }");
 
-    QPushButton *browseButton = new QPushButton("浏览", this);
+    browseButton = new QPushButton(tr("浏览"), this);
     browseButton->setFixedWidth(100);
     browseButton->setFont(Ui::getAppFont(16));
     browseButton->setStyleSheet(
@@ -176,9 +179,9 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
 
     // 生成与保存按钮
     auto *buttonLayout = new QHBoxLayout();
-    generateButton = new QPushButton("生成", this);
-    decodeToChemFile = new QPushButton("解码");
-    saveButton = new QPushButton("保存", this);
+    generateButton = new QPushButton(tr("生成"), this);
+    decodeToChemFile = new QPushButton(tr("解码"));
+    saveButton = new QPushButton(tr("保存"), this);
     generateButton->setFixedHeight(40);
     saveButton->setFixedHeight(40);
     decodeToChemFile->setFixedHeight(40);
@@ -186,13 +189,14 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     decodeToChemFile->setFont(Ui::getAppFont(16));
     saveButton->setFont(Ui::getAppFont(16));
 
-    generateButton->setToolTip("请选择任意文件来生成条码");
-    decodeToChemFile->setToolTip("可以解码PNG图片中的条码");
+    generateButton->setToolTip(tr("请选择任意文件来生成条码"));
+    decodeToChemFile->setToolTip(tr("可以解码PNG图片中的条码"));
 
     generateButton->setEnabled(false);
     decodeToChemFile->setEnabled(false);
     saveButton->setEnabled(false);
 
+    emptyLabel = new QLabel(tr("请选择文件\n或者键入内容"));
     buttonLayout->addWidget(generateButton);
     buttonLayout->addWidget(decodeToChemFile);
     buttonLayout->addWidget(saveButton);
@@ -226,7 +230,7 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     }
     formatComboBox->setCurrentText("QRCode");
 
-    QLabel *formatLabel = new QLabel("选择条码类型:", this);
+    formatLabel = new QLabel(tr("选择条码类型:"), this);
     formatLabel->setFont(Ui::getAppFont(14));
     comboBoxLayout->addWidget(formatLabel);
     comboBoxLayout->addWidget(formatComboBox);
@@ -234,14 +238,14 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
 
     auto *sizeLayout = new QHBoxLayout();
 
-    QLabel *widthLabel = new QLabel("宽度:", this);
+    widthLabel = new QLabel(tr("宽度:"), this);
     widthInput = new QLineEdit(this);
     widthInput->setText("300"); // 默认宽度
     widthInput->setFont(Ui::getAppFont(13));
     widthInput->setStyleSheet(
         "QLineEdit { border: 1px solid #ccc; border-radius: 5px; padding: 5px; background-color: #f9f9f9; }");
 
-    QLabel *heightLabel = new QLabel("高度:", this);
+    heightLabel = new QLabel(tr("高度:"), this);
     heightInput = new QLineEdit(this);
     heightInput->setText("300"); // 默认高度
     heightInput->setFont(Ui::getAppFont(13));
@@ -285,7 +289,7 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
         updateButtonStates();
     });
 
-    connect(formatComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [this, formatComboBox](int index) {
+    connect(formatComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [this](int index) {
         // 设置当前选择的条码格式
         currentBarcodeFormat = stringToBarcodeFormat(barcodeFormats[index]);
     });
@@ -321,16 +325,16 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
         messageWidget->addMessage(topic, payload);
     });
 
-    connect(directTextAction, &QAction::toggled, this, [this, browseButton](bool checked) {
+    connect(directTextAction, &QAction::toggled, this, [this](bool checked) {
         filePathEdit->clear();
         lastSelectedFiles.clear();
         lastResults.clear();
 
         if (checked) {
-            filePathEdit->setPlaceholderText("输入要转换的文字");
+            filePathEdit->setPlaceholderText(tr("输入要转换的文字"));
             browseButton->setEnabled(false);
         } else {
-            filePathEdit->setPlaceholderText("选择一个文件或图片");
+            filePathEdit->setPlaceholderText(tr("选择一个文件或图片"));
             browseButton->setEnabled(true);
             decodeToChemFile->setEnabled(false);
         }
@@ -349,6 +353,16 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     });
 
     renderResults();
+
+    // 这三行必须在构造函数最后面
+    // 因为init会调用switchLanguage触发QEvent::LanguageChange事件
+    // 从而BarCodeWidget::retranslate函数被调用
+    // BarCodeWidget::retranslate函数调用前需确保BarCodeWidget的所有组件完成初始化
+    // 否则会访问空指针导致程序崩溃
+    LanguageManager& languageMgr = LanguageManager::instance();
+    languageMgr.init();
+    // 初始化多语言管理器的Action
+    setupLanguageAction();
 }
 
 void BarcodeWidget::updateButtonStates() const {
@@ -374,7 +388,7 @@ void BarcodeWidget::updateButtonStates() const {
 void BarcodeWidget::onBrowseFile() const {
     fileDialog->setFileMode(QFileDialog::ExistingFiles);
     fileDialog->setOption(QFileDialog::ShowDirsOnly, false);
-    fileDialog->setWindowTitle("选择需要转换的文件或图片");
+    fileDialog->setWindowTitle(tr("选择需要转换的文件或图片"));
     fileDialog->open();
 }
 
@@ -432,7 +446,7 @@ void BarcodeWidget::onGenerateClicked() {
                     if (!img.isNull()) {
                         res.data = img;
                     } else {
-                        res.data = std::string("生成图片失败");
+                        res.data = QString(tr("生成图片失败")).toStdString();
                     }
                 } catch (const std::exception &e) { res.data.emplace<std::string>(e.what()); }
                 return res;
@@ -462,7 +476,7 @@ void BarcodeWidget::onGenerateClicked() {
                       }),
                       std::back_inserter(filePaths));
     if (filePaths.empty()) {
-        QMessageBox::warning(this, "警告", "无可处理文件");
+        QMessageBox::warning(this, tr("警告"), tr("无可处理文件"));
         return;
     }
     // 2. UI 状态准备
@@ -487,7 +501,7 @@ void BarcodeWidget::onGenerateClicked() {
 
                 convert::result_data_entry res;
                 if (!file.open(QIODevice::ReadOnly)) {
-                    res.data = std::string("无法打开文件: ") + filePath.toStdString();
+                    res.data = QString(tr("无法打开文件: ")).toStdString() + filePath.toStdString();
                     res.source_file_name = std::move(filePath);
                     return res;
                 } else {
@@ -511,7 +525,7 @@ void BarcodeWidget::onGenerateClicked() {
                 if (!img.isNull()) {
                     res.data = img;
                 } else {
-                    res.data = std::string("生成图片失败");
+                    res.data = QString(tr("生成图片失败")).toStdString();
                 }
 
                 return res;
@@ -540,7 +554,7 @@ void BarcodeWidget::onGenerateClicked() {
 void BarcodeWidget::onDecodeToChemFileClicked() {
     const QStringList filePaths = lastSelectedFiles.filter(fileExtensionRegex_image);
     if (filePaths.empty()) {
-        QMessageBox::warning(this, "警告", "无可处理文件");
+        QMessageBox::warning(this, tr("警告"), tr("无可处理文件"));
         return;
     }
 
@@ -563,9 +577,9 @@ void BarcodeWidget::onDecodeToChemFileClicked() {
                 switch (auto rst = convert::QRcode_to_byte(file_path); rst.err) {
                 case convert::result_i2t::empty_img:
                     spdlog::error("cv::imread 无法加载图片文件: {}", path.toStdString());
-                    return {std::move(path), QString{"无法加载图片文件: %1"}.arg(path).toStdString()};
+                    return {std::move(path), QString{tr("无法加载图片文件: %1")}.arg(path).toStdString()};
                 case convert::result_i2t::invalid_qrcode:
-                    return {std::move(path), std::string{"无法识别条码或条码格式不正确"}};
+                    return {std::move(path), QString{tr("无法识别条码或条码格式不正确")}.toStdString()};
                 default:
                     std::vector<std::uint8_t> decodedData;
                     if (useBase64) {
@@ -598,7 +612,7 @@ void BarcodeWidget::onDecodeToChemFileClicked() {
 
 void BarcodeWidget::onSaveClicked() {
     if (lastResults.empty()) {
-        QMessageBox::warning(this, "警告", "没有可保存的内容。");
+        QMessageBox::warning(this, tr("警告"), tr("没有可保存的内容。"));
         return;
     }
 
@@ -627,11 +641,11 @@ void BarcodeWidget::onSaveClicked() {
         auto fileName = std::visit<QString>(
             overload_def_noop{std::in_place_type<QString>,
                               [&](const QImage &) {
-                                  return QFileDialog::getSaveFileName(this, "保存图片", defName, "PNG Images (*.png)");
+                                  return QFileDialog::getSaveFileName(this, tr("保存图片"), defName, "PNG Images (*.png)");
                               },
                               [&](const QByteArray &) {
                                   return QFileDialog::getSaveFileName(
-                                      this, "保存文件", defName, "Binary Files (*.rfa);;Text Files (*.txt)");
+                                      this, tr("保存文件"), defName, "Binary Files (*.rfa);;Text Files (*.txt)");
                               }},
             entry.data);
 
@@ -642,7 +656,7 @@ void BarcodeWidget::onSaveClicked() {
     } else {
         const QString dir =
             QFileDialog::getExistingDirectory(this,
-                                              "请选择保存文件夹",
+                                              tr("请选择保存文件夹"),
                                               QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
                                               QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
 
@@ -737,37 +751,37 @@ void BarcodeWidget::onSaveClicked() {
             } else {
                 QString reason;
                 switch (res.err) {
-                case SaveResult::invalid_data: reason = "数据为空或无效"; break;
-                case SaveResult::failed: reason = "写入失败"; break;
-                default: reason = "未知错误"; break;
+                case SaveResult::invalid_data: reason = tr("数据为空或无效"); break;
+                case SaveResult::failed: reason = tr("写入失败"); break;
+                default: reason = tr("未知错误"); break;
                 }
                 failedInfos.append(QString("• %1 (%2)").arg(fileName, reason));
             }
         }
 
         // 构建消息框内容
-        QString msg = QString("操作完成。\n总计处理: %1\n成功: %2\n失败: %3")
+        QString msg = QString(tr("操作完成。\n总计处理: %1\n成功: %2\n失败: %3"))
                           .arg(list.size())
                           .arg(successCount)
                           .arg(failedInfos.size());
 
         if (!failedInfos.isEmpty()) {
-            msg += "\n\n[保存失败的文件]:\n";
+            msg += tr("\n\n[保存失败的文件]:\n");
             // 限制显示的错误行数，防止弹窗过高
             static constexpr int maxErrorsToShow = 10;
             for (int i = 0; i < std::min(failedInfos.size(), maxErrorsToShow); ++i) {
                 msg += failedInfos[i] + "\n";
             }
             if (failedInfos.size() > maxErrorsToShow) {
-                msg += QString("...以及其他 %1 个文件").arg(failedInfos.size() - maxErrorsToShow);
+                msg += QString(tr("...以及其他 %1 个文件")).arg(failedInfos.size() - maxErrorsToShow);
             }
-            QMessageBox::warning(this, "保存结果 - 包含错误", msg);
+            QMessageBox::warning(this, tr("保存结果 - 包含错误"), msg);
         } else {
             // 全部成功的情况
             if (!successInfos.isEmpty() && list.size() > 1) {
-                msg += "\n\n[文件列表]:\n" + successInfos.join("\n");
+                msg += tr("\n\n[文件列表]:\n") + successInfos.join("\n");
             }
-            QMessageBox::information(this, "保存成功", msg);
+            QMessageBox::information(this, tr("保存成功"), msg);
         }
 
         watcher->deleteLater();
@@ -814,7 +828,7 @@ void BarcodeWidget::renderResults() const {
 
     if (lastResults.empty() && directTextAction->isChecked()) {
         QVBoxLayout *vLayout = new QVBoxLayout(container);
-        QLabel *infoLabel = new QLabel("当前模式：直接文本生成\n请输入内容并点击生成");
+        QLabel *infoLabel = new QLabel(tr("当前模式：直接文本生成\n请输入内容并点击生成"));
         infoLabel->setAlignment(Qt::AlignCenter);
         infoLabel->setStyleSheet("font-size: 18px; color: #aaa;");
         vLayout->addWidget(infoLabel);
@@ -830,7 +844,7 @@ void BarcodeWidget::renderResults() const {
             listLayout->setContentsMargins(10, 10, 10, 10);
             listLayout->setAlignment(Qt::AlignTop);
 
-            QLabel *headerLabel = new QLabel(QString("已选择 %1 个文件，准备处理:").arg(lastSelectedFiles.size()));
+            QLabel *headerLabel = new QLabel(QString(tr("已选择 %1 个文件，准备处理:")).arg(lastSelectedFiles.size()));
             headerLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #555; margin-bottom: 5px;");
             listLayout->addWidget(headerLabel);
 
@@ -886,13 +900,13 @@ void BarcodeWidget::renderResults() const {
                 typeLabel->setStyleSheet("border: none; background: transparent; font-size: 12px; font-weight: bold;");
 
                 if (isImage) {
-                    typeLabel->setText("[待解码]");
+                    typeLabel->setText(tr("[待解码]"));
                     typeLabel->setStyleSheet(typeLabel->styleSheet() + "color: #67C23A;"); // 橙色提示解码
                 } else if (isText) {
-                    typeLabel->setText("[待生成]");
+                    typeLabel->setText(tr("[待生成]"));
                     typeLabel->setStyleSheet(typeLabel->styleSheet() + "color: #67C23A;"); // 绿色提示生成
                 } else {
-                    typeLabel->setText("[不确定类型，默认待生成]");
+                    typeLabel->setText(tr("[不确定类型，默认待生成]"));
                     typeLabel->setStyleSheet(typeLabel->styleSheet() + "color: #E6A23C;");
                 }
 
@@ -909,7 +923,7 @@ void BarcodeWidget::renderResults() const {
         } else {
             // 无文件选中且无结果
             QVBoxLayout *vLayout = new QVBoxLayout(container);
-            QLabel *emptyLabel = new QLabel("请选择文件\n或者键入内容");
+            QLabel *emptyLabel = new QLabel(tr("请选择文件\n或者键入内容"));
             emptyLabel->setAlignment(Qt::AlignCenter);
             emptyLabel->setStyleSheet("font-size: 18px; color: #aaa;");
             vLayout->addWidget(emptyLabel);
@@ -1124,6 +1138,65 @@ ZXing::BarcodeFormat BarcodeWidget::stringToBarcodeFormat(const QString &formatS
     key[0] = key[0].toUpper(); // 确保首字母大写以匹配上面的key
 
     return map.value(key, ZXing::BarcodeFormat::None); // 未匹配时返回None
+}
+
+void BarcodeWidget::setupLanguageAction() {
+    LanguageManager& languageMgr = LanguageManager::instance();
+
+
+    QActionGroup *langGroup = new QActionGroup(this);
+    langGroup->setExclusive(true);
+
+    const QStringList displayNames = languageMgr.availableDisPlayNames();
+
+    for (const QString &displayName : displayNames) {
+        QString localeKey = languageMgr.localeFromDisplayName(displayName);
+        if (localeKey.isEmpty()) continue;
+
+        QAction *action = new QAction(displayName, this);
+        action->setCheckable(true);
+        action->setChecked(languageMgr.currentLocale() == localeKey);
+        action->setData(localeKey);
+
+        languageSubMenu->addAction(action);
+        langGroup->addAction(action);
+    }
+
+    connect(langGroup, &QActionGroup::triggered, this, [&languageMgr](QAction *action) {
+        QString locale = action->data().toString();
+        languageMgr.switchLanguage(locale);
+    });
+}
+
+void BarcodeWidget::retranslate() {
+    helpMenu->setTitle(tr("帮助"));
+    toolsMenu->setTitle(tr("工具"));
+    settingMenu->setTitle(tr("设置"));
+    languageSubMenu->setTitle(tr("语言"));
+    aboutAction->setText(tr("关于软件"));
+    debugMqttAction->setText(tr("MQTT实时消息监控窗口"));
+    openCameraScanAction->setText(tr("打开摄像头扫码"));
+    base64CheckAcion->setText(tr("Base64"));
+    directTextAction->setText(tr("文本输入"));
+    filePathEdit->setPlaceholderText(tr("选择一个文件或图片"));
+    browseButton->setText(tr("浏览"));
+    generateButton->setText(tr("生成"));
+    decodeToChemFile->setText(tr("解码"));
+    saveButton->setText(tr("保存"));
+    generateButton->setToolTip(tr("请选择任意文件来生成条码"));
+    decodeToChemFile->setToolTip(tr("可以解码PNG图片中的条码"));
+    formatLabel->setText(tr("选择条码类型:"));
+    widthLabel->setText(tr("宽度:"));
+    heightLabel->setText(tr("高度:"));
+    // 调用该函数触发正确的显示
+    renderResults();
+}
+
+void BarcodeWidget::changeEvent(QEvent * event) {
+    if(event->type() == QEvent::LanguageChange){
+        retranslate();
+    }
+    QWidget::changeEvent(event);
 }
 
 const QStringList BarcodeWidget::barcodeFormats = [] {
