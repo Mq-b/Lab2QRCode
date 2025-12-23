@@ -37,7 +37,7 @@ void LanguageManager::switchLanguage(const QString &locale) {
     // 移除旧的翻译器
     qApp->removeTranslator(&translator_);
     // 加载新的翻译器
-    if (!translator_.load(QString(":/i18n/app_%1").arg(locale))) {
+    if (!translator_.load(QString("./translations/app_%1").arg(locale))) {
         spdlog::error("Failed to load translation file: {}", locale.toStdString());
         return;
     }

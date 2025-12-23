@@ -10,7 +10,7 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/build/${CMAKE_BUILD_TYPE}/bin)
 
 include_directories(include)
 
-set(CMAKE_PREFIX_PATH $ENV{VCPKG_LIB} ${CMAKE_PREFIX_PATH})
+#set(CMAKE_PREFIX_PATH $ENV{VCPKG_LIB} ${CMAKE_PREFIX_PATH})
 #set(CMAKE_PREFIX_PATH  $ENV{QT5_15_STATIC} ${CMAKE_PREFIX_PATH})
 
 set(VERSION_CPP "${CMAKE_SOURCE_DIR}/src/version_info/version.cpp")
@@ -44,30 +44,7 @@ endif()
 
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 
-# 获取 lupdate 和 lrelease 的实际路径
-get_target_property(QT_LUPDATE_EXECUTABLE Qt5::lupdate LOCATION)
-get_target_property(QT_LRELEASE_EXECUTABLE Qt5::lrelease LOCATION)
-
-# 翻译文件生成脚本路径
-set(TRANSLATION_SCRIPT ${CMAKE_SOURCE_DIR}/scripts/configure/generate_translations.ps1)
-
-# 在 configure 阶段执行generate_translations.ps1脚本
-execute_process(
-    COMMAND powershell -ExecutionPolicy Bypass -File ${TRANSLATION_SCRIPT}
-            "${QT_LUPDATE_EXECUTABLE}"
-            "${QT_LRELEASE_EXECUTABLE}"
-            "${CMAKE_SOURCE_DIR}"
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    RESULT_VARIABLE SCRIPT_RESULT
-    ECHO_OUTPUT_VARIABLE
-)
-
-if(NOT SCRIPT_RESULT EQUAL 0)
-    message(FATAL_ERROR "Translation script failed!")
-endif()
-
-
-add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${VERSION_CPP} "logo.rc" resources/i18n.qrc)
+add_executable(${PROJECT_NAME} WIN32 ${SOURCES} ${VERSION_CPP} "logo.rc")
 add_dependencies(${PROJECT_NAME} RunPowerShellScript)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -93,3 +70,42 @@ add_custom_command(
   POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/setting" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/setting"
 )
+
+# ========================================
+# 翻译文件自动更新、自动生成、自动拷贝到可执行生成
+# 设置ts文件目录
+set(TS_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/translations/app_en_US.ts
+    ${CMAKE_CURRENT_SOURCE_DIR}/translations/app_zh_CN.ts
+)
+
+# 每次构建都自动更新 .ts 文件
+add_custom_target(update_translations ALL
+    COMMAND ${Qt5_LUPDATE_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            -ts ${TS_FILES}
+            -no-obsolete
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Updating .ts files"
+)
+
+# 生成 .qm 文件
+qt5_add_translation(QM_FILES ${TS_FILES})
+# QM_FILES添加进sources，否则不会生成qm文件
+target_sources(${PROJECT_NAME} PRIVATE ${QM_FILES})
+
+# 拷贝 .qm 文件到 bin/translations 目录下
+foreach(QM_FILE IN LISTS QM_FILES)
+    get_filename_component(QM_FILENAME ${QM_FILE} NAME)
+    add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/translations"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${QM_FILE}"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/translations/${QM_FILENAME}"
+        COMMENT "Copying ${QM_FILENAME} to translations folder"
+    )
+endforeach()
+# ========================================

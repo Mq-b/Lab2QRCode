@@ -358,231 +358,231 @@ or enter content</translation>
     <name>CameraWidget</name>
     <message>
         <location filename="../src/CameraWidget.cpp" line="221"/>
-        <location filename="../src/CameraWidget.cpp" line="794"/>
+        <location filename="../src/CameraWidget.cpp" line="828"/>
         <source>摄像头预览</source>
         <translation>Camera preview</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="228"/>
-        <location filename="../src/CameraWidget.cpp" line="795"/>
+        <location filename="../src/CameraWidget.cpp" line="829"/>
         <source>摄像头</source>
         <translation>Camera</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="231"/>
-        <location filename="../src/CameraWidget.cpp" line="796"/>
+        <location filename="../src/CameraWidget.cpp" line="830"/>
         <source>显示设置</source>
         <translation>Display settings</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="237"/>
-        <location filename="../src/CameraWidget.cpp" line="797"/>
+        <location filename="../src/CameraWidget.cpp" line="831"/>
         <source>二维码类型</source>
         <translation>QR code type</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="240"/>
-        <location filename="../src/CameraWidget.cpp" line="798"/>
+        <location filename="../src/CameraWidget.cpp" line="832"/>
         <source>全选</source>
         <translation>Select All</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="244"/>
-        <location filename="../src/CameraWidget.cpp" line="799"/>
+        <location filename="../src/CameraWidget.cpp" line="833"/>
         <source>清空</source>
         <translation>Clear</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="315"/>
-        <location filename="../src/CameraWidget.cpp" line="800"/>
+        <location filename="../src/CameraWidget.cpp" line="834"/>
         <source>后处理</source>
         <translation>Post-processing</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="317"/>
-        <location filename="../src/CameraWidget.cpp" line="801"/>
+        <location filename="../src/CameraWidget.cpp" line="835"/>
         <source>图像增强</source>
         <translation>Image enhancement</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="324"/>
-        <location filename="../src/CameraWidget.cpp" line="802"/>
+        <location filename="../src/CameraWidget.cpp" line="836"/>
         <source>调试</source>
         <translation>Debug</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="325"/>
-        <location filename="../src/CameraWidget.cpp" line="803"/>
+        <location filename="../src/CameraWidget.cpp" line="837"/>
         <source>保存识别帧</source>
         <translation>Save recognised frame</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="339"/>
-        <location filename="../src/CameraWidget.cpp" line="696"/>
-        <location filename="../src/CameraWidget.cpp" line="805"/>
+        <location filename="../src/CameraWidget.cpp" line="730"/>
+        <location filename="../src/CameraWidget.cpp" line="839"/>
         <source>时间</source>
         <translation>Time</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="340"/>
-        <location filename="../src/CameraWidget.cpp" line="697"/>
-        <location filename="../src/CameraWidget.cpp" line="806"/>
+        <location filename="../src/CameraWidget.cpp" line="731"/>
+        <location filename="../src/CameraWidget.cpp" line="840"/>
         <source>图像</source>
         <translation>Image</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="341"/>
-        <location filename="../src/CameraWidget.cpp" line="698"/>
-        <location filename="../src/CameraWidget.cpp" line="807"/>
+        <location filename="../src/CameraWidget.cpp" line="732"/>
+        <location filename="../src/CameraWidget.cpp" line="841"/>
         <source>类型</source>
         <translation>Type</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="342"/>
-        <location filename="../src/CameraWidget.cpp" line="699"/>
-        <location filename="../src/CameraWidget.cpp" line="808"/>
+        <location filename="../src/CameraWidget.cpp" line="733"/>
+        <location filename="../src/CameraWidget.cpp" line="842"/>
         <source>内容</source>
         <translation>Content</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="343"/>
-        <location filename="../src/CameraWidget.cpp" line="809"/>
+        <location filename="../src/CameraWidget.cpp" line="843"/>
         <source>[隐藏] PNG 数据</source>
         <translation>[Hidden] PNG Data</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="344"/>
-        <location filename="../src/CameraWidget.cpp" line="810"/>
+        <location filename="../src/CameraWidget.cpp" line="844"/>
         <source>[隐藏] 图片宽度</source>
         <translation>[隐藏] 图片宽度</translation>
     </message>
     <message>
         <location filename="../src/CameraWidget.cpp" line="345"/>
-        <location filename="../src/CameraWidget.cpp" line="811"/>
+        <location filename="../src/CameraWidget.cpp" line="845"/>
         <source>[隐藏] 图片高度</source>
         <translation>[Hidden] Image Height</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="371"/>
-        <location filename="../src/CameraWidget.cpp" line="813"/>
+        <location filename="../src/CameraWidget.cpp" line="405"/>
+        <location filename="../src/CameraWidget.cpp" line="847"/>
         <source>摄像头就绪...</source>
         <translation>Camera ready...</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="394"/>
-        <location filename="../src/CameraWidget.cpp" line="814"/>
+        <location filename="../src/CameraWidget.cpp" line="428"/>
+        <location filename="../src/CameraWidget.cpp" line="848"/>
         <source>导出</source>
         <translation>Export</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="396"/>
-        <location filename="../src/CameraWidget.cpp" line="815"/>
+        <location filename="../src/CameraWidget.cpp" line="430"/>
+        <location filename="../src/CameraWidget.cpp" line="849"/>
         <source>导出 HTML (.html)</source>
         <translation>Export HTML (.html)</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="397"/>
-        <location filename="../src/CameraWidget.cpp" line="816"/>
+        <location filename="../src/CameraWidget.cpp" line="431"/>
+        <location filename="../src/CameraWidget.cpp" line="850"/>
         <source>导出 XLSX (.xlsx)</source>
         <translation>Export XLSX (.xlsx)</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="407"/>
+        <location filename="../src/CameraWidget.cpp" line="441"/>
         <source>保存为 HTML (.html)</source>
         <translation>Save as HTML (.html)</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="407"/>
+        <location filename="../src/CameraWidget.cpp" line="441"/>
         <source>HTML 文件 (*.html)</source>
         <translation>HTML file (*.html)</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="410"/>
-        <location filename="../src/CameraWidget.cpp" line="423"/>
+        <location filename="../src/CameraWidget.cpp" line="444"/>
+        <location filename="../src/CameraWidget.cpp" line="457"/>
         <source>导出完成</source>
         <translation>Export completed</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="410"/>
+        <location filename="../src/CameraWidget.cpp" line="444"/>
         <source>已导出 HTML 文件：
 </source>
         <translation>HTML file exported:
 </translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="412"/>
-        <location filename="../src/CameraWidget.cpp" line="425"/>
+        <location filename="../src/CameraWidget.cpp" line="446"/>
+        <location filename="../src/CameraWidget.cpp" line="459"/>
         <source>导出失败</source>
         <translation>Export failed</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="412"/>
+        <location filename="../src/CameraWidget.cpp" line="446"/>
         <source>导出 HTML 文件失败：
 </source>
         <translation>Failed to export HTML file:
 </translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="420"/>
+        <location filename="../src/CameraWidget.cpp" line="454"/>
         <source>保存为 XLSX (.xlsx)</source>
         <translation>Save as XLSX (.xlsx)</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="420"/>
+        <location filename="../src/CameraWidget.cpp" line="454"/>
         <source>Excel 文件 (*.xlsx)</source>
         <translation>Excel file (*.xlsx)</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="423"/>
+        <location filename="../src/CameraWidget.cpp" line="457"/>
         <source>已导出 XLSX 文件：
 </source>
         <translation>XLSX file exported:
 </translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="425"/>
+        <location filename="../src/CameraWidget.cpp" line="459"/>
         <source>导出 XLSX 文件失败：
 </source>
         <translation>Failed to export XLSX file:
 </translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="483"/>
+        <location filename="../src/CameraWidget.cpp" line="517"/>
         <source>错误</source>
         <translation>Error</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="483"/>
+        <location filename="../src/CameraWidget.cpp" line="517"/>
         <source>无法打开摄像头</source>
         <translation>Unable to open the camera</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="512"/>
+        <location filename="../src/CameraWidget.cpp" line="546"/>
         <source>摄像头已启动</source>
         <translation>Camera has started</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="538"/>
+        <location filename="../src/CameraWidget.cpp" line="572"/>
         <source>摄像头已停止</source>
         <translation>Camera has stopped</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="545"/>
+        <location filename="../src/CameraWidget.cpp" line="579"/>
         <source>摄像头运行中...</source>
         <translation>Camera is running...</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="548"/>
+        <location filename="../src/CameraWidget.cpp" line="582"/>
         <source>检测到 </source>
         <translation>Detected </translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="548"/>
+        <location filename="../src/CameraWidget.cpp" line="582"/>
         <source> 码</source>
         <translation> code</translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="551"/>
+        <location filename="../src/CameraWidget.cpp" line="585"/>
         <source>条码类型: %1
 内容: %2
 时间: %3
@@ -595,7 +595,7 @@ Time: %3
 </translation>
     </message>
     <message>
-        <location filename="../src/CameraWidget.cpp" line="689"/>
+        <location filename="../src/CameraWidget.cpp" line="723"/>
         <source>扫描结果</source>
         <translation>Scan results</translation>
     </message>

@@ -23,6 +23,7 @@ class QLabel;
 class QTimer;
 class QTableView;
 class QStandardItemModel;
+class QToolButton;
 
 /**
  * @class CameraWidget
