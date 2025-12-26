@@ -311,7 +311,7 @@ CameraWidget::CameraWidget(QWidget *parent)
         cameraMenu->addAction(action);
         connect(action, &QAction::triggered, this, [this, action] {
             const int index = action->data().toInt();
-            currentCameraIndex = index;  // 更新当前摄像头
+            // currentCameraIndex = index;  // 更新当前摄像头
             onCameraIndexChanged(index); // 切换摄像头
         });
     }
@@ -510,11 +510,19 @@ bool CameraWidget::eventFilter(QObject *obj, QEvent *event) {
 }
 
 void CameraWidget::onCameraIndexChanged(int index) {
-    if (cameraStarted) {
-        // 已启动则切换摄像头
-        stopCamera();
-        startCamera(index);
+    // 如果index的是当前打开的摄像头则直接返回，避免无用的重新打开
+    if (currentCameraIndex == index) {
+        return;
     }
+    // 修改当前摄像头id
+    currentCameraIndex = index;
+    // 如果当前正在处于开启中或者关闭中则返回，避免数据竞争导致崩溃
+    if (cameraState == CameraState::Starting || cameraState == CameraState::Stopping) {
+        return;
+    }
+    // 已启动则切换摄像头
+    stopCamera();
+    startCamera(index);
 }
 
 void CameraWidget::hideEvent(QHideEvent *event) {
@@ -524,7 +532,7 @@ void CameraWidget::hideEvent(QHideEvent *event) {
 
 void CameraWidget::showEvent(QShowEvent *event) {
     QWidget::showEvent(event); // 保留基类行为
-    if (!cameraStarted) {
+    if (cameraState == CameraState::Stopped) {
         startCamera(currentCameraIndex); // 使用当前摄像头索引
     }
 }
@@ -533,11 +541,11 @@ CameraWidget::~CameraWidget() {
 }
 // 启动摄像头（可指定索引）
 void CameraWidget::startCamera(int camIndex) {
-    if (cameraStarted) {
-        return;
+    // 原子检查+修改
+    CameraState expected = CameraState::Stopped;
+    if (!cameraState.compare_exchange_strong(expected, CameraState::Starting)) {
+        return; // 当前状态为启动中/运行中/关闭中，直接返回不做处理
     }
-
-    cameraStarted = true;
     running = true;
 
     asyncOpenFuture = std::async(std::launch::async, [this, camIndex] {
@@ -548,8 +556,14 @@ void CameraWidget::startCamera(int camIndex) {
             QMetaObject::invokeMethod(
                 this,
                 [this] {
+                    cameraState = CameraState::Stopped;
                     QMessageBox::warning(this, tr("错误"), tr("无法打开摄像头"));
-                    cameraStarted = false;
+
+                    // 回滚到上一次成功启动的摄像头
+                    if (currentCameraIndex != lastSuccessfulCameraIndex && lastSuccessfulCameraIndex != -1) {
+                        currentCameraIndex = lastSuccessfulCameraIndex;
+                    }
+                    startCamera(currentCameraIndex);
                 },
                 Qt::QueuedConnection);
             return;
@@ -557,26 +571,32 @@ void CameraWidget::startCamera(int camIndex) {
         // 根据打开的摄像头加载摄像头配置
         std::vector<CameraConfig> configs = CameraConfig::getSupportedCameraConfigs(camIndex);
 
-        // 回到主线程，创建菜单 UI
-        QMetaObject::invokeMethod(this, [this, configs]() { loadCameraConfigs(configs); }, Qt::QueuedConnection);
         // 默认选择最佳配置
         const auto config = CameraConfig::selectBestCameraConfig(configs);
+
+        cap->set(cv::CAP_PROP_FRAME_WIDTH, config.width);
+        cap->set(cv::CAP_PROP_FRAME_HEIGHT, config.height);
+        cap->set(cv::CAP_PROP_FPS, config.fps);
+
         spdlog::info("Selected Camera Config - Resolution: {}x{}, FPS: {}, Pixel Format: {}",
                      config.width,
                      config.height,
                      config.fps,
                      config.pixelFormat.toStdString());
-        //勾选对应的配置，在主线程操作 UI
-        QMetaObject::invokeMethod(this, [this, config] { selectBestCameraConfigUI(config); }, Qt::QueuedConnection);
-        cap->set(cv::CAP_PROP_FRAME_WIDTH, config.width);
-        cap->set(cv::CAP_PROP_FRAME_HEIGHT, config.height);
-        cap->set(cv::CAP_PROP_FPS, config.fps);
 
-        this->capture = cap.release();
-
+        // 主线程进行操作
         QMetaObject::invokeMethod(
             this,
-            [this] {
+            [this, cap = std::move(cap), configs, config, camIndex]() mutable {
+                if (cameraState != CameraState::Starting) {
+                    return;
+                }
+
+                loadCameraConfigs(configs);
+                selectBestCameraConfigUI(config);
+                this->capture = cap.release();
+                lastSuccessfulCameraIndex = camIndex;
+                cameraState = CameraState::Running;
                 cameraStatusLabel->setText(tr("摄像头已启动"));
                 captureThread = std::thread(&CameraWidget::captureLoop, this);
             },
@@ -585,11 +605,15 @@ void CameraWidget::startCamera(int camIndex) {
 }
 
 void CameraWidget::stopCamera() {
-    frameWidget->clear();
-    if (!cameraStarted) {
+    CameraState state = cameraState.load();
+    // 如果状态为已关闭或者正在关闭中则直接返回
+    if (state == CameraState::Stopped || state == CameraState::Stopping) {
         return;
     }
+    cameraState = CameraState::Stopping;
     running = false;
+    frameWidget->clear();
+
     if (captureThread.joinable()) {
         captureThread.join();
     }
@@ -601,8 +625,7 @@ void CameraWidget::stopCamera() {
         delete capture;
     }
     capture = nullptr;
-    cameraStarted = false;
-
+    cameraState = CameraState::Stopped;
     cameraStatusLabel->setText(tr("摄像头已停止"));
 }
 
