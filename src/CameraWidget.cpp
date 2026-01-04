@@ -1,6 +1,6 @@
 #include "CameraWidget.h"
-#include "components/beep.h"
 #include "components/UiConfig.h"
+#include "components/beep.h"
 #include "sysinfo.h"
 #include <QBuffer>
 #include <QCameraInfo>

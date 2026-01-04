@@ -925,44 +925,43 @@ void BarcodeWidget::renderResults() const {
 
         QWidget *contentWidget = nullptr;
 
-        std::visit(
-            overload_def_noop{
-                std::in_place_type<void>,
-                [&](const QImage &img) {
-                    QLabel *imgLabel = new QLabel();
-                    imgLabel->setObjectName("imageLabel");
-                    imgLabel->setPixmap(QPixmap::fromImage(img));
-                    imgLabel->setAlignment(Qt::AlignCenter);
-                    imgLabel->setToolTip(QString("Size: %1x%2").arg(img.width()).arg(img.height()));
+        std::visit(overload_def_noop{
+                       std::in_place_type<void>,
+                       [&](const QImage &img) {
+                           QLabel *imgLabel = new QLabel();
+                           imgLabel->setObjectName("imageLabel");
+                           imgLabel->setPixmap(QPixmap::fromImage(img));
+                           imgLabel->setAlignment(Qt::AlignCenter);
+                           imgLabel->setToolTip(QString("Size: %1x%2").arg(img.width()).arg(img.height()));
 
-                    // [修改] 将最小尺寸设置为图片尺寸，确保大图能撑开 ScrollArea 出现滚动条
-                    imgLabel->setMinimumSize(img.size());
+                           // [修改] 将最小尺寸设置为图片尺寸，确保大图能撑开 ScrollArea 出现滚动条
+                           imgLabel->setMinimumSize(img.size());
 
-                    contentWidget = imgLabel;
-                },
-                [&](const QByteArray &data) {
-                    QLabel *textLabel = new QLabel();
-                    textLabel->setObjectName("textLabel");
-                    // 显示完整解码内容
-                    QString textDisplay = QString::fromUtf8(data);
+                           contentWidget = imgLabel;
+                       },
+                       [&](const QByteArray &data) {
+                           QLabel *textLabel = new QLabel();
+                           textLabel->setObjectName("textLabel");
+                           // 显示完整解码内容
+                           QString textDisplay = QString::fromUtf8(data);
 
-                    textLabel->setText(textDisplay);
-                    textLabel->setWordWrap(true);
+                           textLabel->setText(textDisplay);
+                           textLabel->setWordWrap(true);
 
-                    textLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-                    textLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred); // 允许内容撑开
-                    contentWidget = textLabel;
-                },
-                [&](const std::string &str) {
-                    QLabel *errLabel = new QLabel(QString::fromStdString(str));
-                    errLabel->setObjectName("errorLabel");
-                    errLabel->setWordWrap(true);
+                           textLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+                           textLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred); // 允许内容撑开
+                           contentWidget = textLabel;
+                       },
+                       [&](const std::string &str) {
+                           QLabel *errLabel = new QLabel(QString::fromStdString(str));
+                           errLabel->setObjectName("errorLabel");
+                           errLabel->setWordWrap(true);
 
-                    errLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-                    errLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-                    contentWidget = errLabel;
-                }},
-            entry.data);
+                           errLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+                           errLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+                           contentWidget = errLabel;
+                       }},
+                   entry.data);
 
         if (contentWidget) {
             singleLayout->addWidget(contentWidget, 1); // 权重设为 1 占据空间
@@ -987,47 +986,46 @@ void BarcodeWidget::renderResults() const {
 
             QWidget *contentWidget = nullptr;
 
-            std::visit(
-                overload_def_noop{
-                    std::in_place_type<void>,
-                    // 图片类型，显示缩略图
-                    [&](const QImage &img) {
-                        QLabel *imgLabel = new QLabel();
-                        imgLabel->setObjectName("imageLabel");
-                        // 使用缩略图大小 200x200
-                        imgLabel->setPixmap(
-                            QPixmap::fromImage(img).scaled(200, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-                        imgLabel->setAlignment(Qt::AlignCenter);
-                        imgLabel->setToolTip(QString("Size: %1x%2").arg(img.width()).arg(img.height()));
-                        contentWidget = imgLabel;
-                    },
-                    // 文本类型，显示前200字符 (截断)
-                    [&](const QByteArray &data) {
-                        QLabel *textLabel = new QLabel();
-                        textLabel->setObjectName("gridTextLabel");
-                        QString textDisplay = QString::fromUtf8(data);
-                        if (textDisplay.length() > 256) {
-                            textDisplay = textDisplay.left(256) + "...";
-                        }
-                        textLabel->setText(textDisplay);
-                        textLabel->setWordWrap(true);
+            std::visit(overload_def_noop{std::in_place_type<void>,
+                                         // 图片类型，显示缩略图
+                                         [&](const QImage &img) {
+                                             QLabel *imgLabel = new QLabel();
+                                             imgLabel->setObjectName("imageLabel");
+                                             // 使用缩略图大小 200x200
+                                             imgLabel->setPixmap(QPixmap::fromImage(img).scaled(
+                                                 200, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+                                             imgLabel->setAlignment(Qt::AlignCenter);
+                                             imgLabel->setToolTip(
+                                                 QString("Size: %1x%2").arg(img.width()).arg(img.height()));
+                                             contentWidget = imgLabel;
+                                         },
+                                         // 文本类型，显示前200字符 (截断)
+                                         [&](const QByteArray &data) {
+                                             QLabel *textLabel = new QLabel();
+                                             textLabel->setObjectName("gridTextLabel");
+                                             QString textDisplay = QString::fromUtf8(data);
+                                             if (textDisplay.length() > 256) {
+                                                 textDisplay = textDisplay.left(256) + "...";
+                                             }
+                                             textLabel->setText(textDisplay);
+                                             textLabel->setWordWrap(true);
 
-                        textLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-                        textLabel->setFixedSize(200, 200);
-                        contentWidget = textLabel;
-                    },
-                    // 错误信息，显示解码或生成的错误内容
-                    [&](const std::string &str) {
-                        QLabel *errLabel = new QLabel(QString::fromStdString(str));
-                        errLabel->setObjectName("gridErrorLabel");
-                        errLabel->setWordWrap(true);
+                                             textLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+                                             textLabel->setFixedSize(200, 200);
+                                             contentWidget = textLabel;
+                                         },
+                                         // 错误信息，显示解码或生成的错误内容
+                                         [&](const std::string &str) {
+                                             QLabel *errLabel = new QLabel(QString::fromStdString(str));
+                                             errLabel->setObjectName("gridErrorLabel");
+                                             errLabel->setWordWrap(true);
 
-                        errLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+                                             errLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
 
-                        errLabel->setFixedSize(200, 200);
-                        contentWidget = errLabel;
-                    }},
-                entry.data);
+                                             errLabel->setFixedSize(200, 200);
+                                             contentWidget = errLabel;
+                                         }},
+                       entry.data);
 
             if (contentWidget) {
                 // 仅在多结果模式下渲染文件名
