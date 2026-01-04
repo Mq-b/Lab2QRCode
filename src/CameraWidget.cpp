@@ -1,5 +1,6 @@
 #include "CameraWidget.h"
 #include "components/beep.h"
+#include "components/UiConfig.h"
 #include "sysinfo.h"
 #include <QBuffer>
 #include <QCameraInfo>
@@ -417,6 +418,7 @@ CameraWidget::CameraWidget(QWidget *parent)
 
         // 创建条码状态标签（右对齐）
         barcodeStatusLabel = new QLabel(this);
+        barcodeStatusLabel->setObjectName("barcodeStatusLabel");
         barcodeStatusLabel->setAlignment(Qt::AlignRight);
         statusBar->addPermanentWidget(barcodeStatusLabel);
 
@@ -427,7 +429,9 @@ CameraWidget::CameraWidget(QWidget *parent)
         barcodeClearTimer->setSingleShot(true);
         connect(barcodeClearTimer, &QTimer::timeout, this, [this]() {
             barcodeStatusLabel->clear();
-            barcodeStatusLabel->setStyleSheet("");
+            barcodeStatusLabel->setProperty("detected", false);
+            barcodeStatusLabel->style()->unpolish(barcodeStatusLabel);
+            barcodeStatusLabel->style()->polish(barcodeStatusLabel);
         });
 
         // 导出按钮（HTML / XLSX）
@@ -472,6 +476,12 @@ CameraWidget::CameraWidget(QWidget *parent)
     }
 
     initBeep();
+
+    // 加载样式表
+    QString styleSheet = Ui::loadStyleSheet("./setting/styles/camera_widget.qss");
+    if (!styleSheet.isEmpty()) {
+        this->setStyleSheet(styleSheet);
+    }
 }
 
 void CameraWidget::updateLastFromModel() {
@@ -614,7 +624,9 @@ void CameraWidget::updateFrame(const FrameResult &r) const {
 
     if (r.hasBarcode) {
         barcodeStatusLabel->setText(tr("检测到 ") + r.type + tr(" 码"));
-        barcodeStatusLabel->setStyleSheet("color: green; font-weight: bold;");
+        barcodeStatusLabel->setProperty("detected", true);
+        barcodeStatusLabel->style()->unpolish(barcodeStatusLabel);
+        barcodeStatusLabel->style()->polish(barcodeStatusLabel);
 
         QString resultText = QString(tr("条码类型: %1\n内容: %2\n时间: %3\n------------------------\n"))
                                  .arg(r.type)

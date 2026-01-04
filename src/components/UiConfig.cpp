@@ -157,3 +157,17 @@ QFont Ui::getAppFont(int pointSize) {
     font.setPointSize(pointSize);
     return font;
 }
+
+QString Ui::loadStyleSheet(const QString &filename) {
+    QFile styleFile(filename);
+    if (styleFile.open(QFile::ReadOnly)) {
+        QString styleSheet = QLatin1String(styleFile.readAll());
+        // 动态注入全局字体设置，确保字体生效
+        QString fontFamily = getAppFont().family();
+        QString fontStyle = QString("QWidget, QLabel, QPushButton { font-family: \"%1\"; }\n").arg(fontFamily);
+        return fontStyle + styleSheet;
+    } else {
+        spdlog::error("Failed to open style file: {}", filename.toStdString());
+        return QString();
+    }
+}

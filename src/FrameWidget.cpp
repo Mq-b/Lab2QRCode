@@ -1,4 +1,6 @@
 #include "FrameWidget.h"
+#include "components/UiConfig.h"
+#include <QFile>
 #include <QImage>
 #include <QPainter>
 #include <QStyleOption>
@@ -32,7 +34,13 @@ QRect scaleKeepAspect(const QRect &outer, const int w, const int h) {
 
 FrameWidget::FrameWidget(QWidget *parent)
     : QWidget(parent) {
-    setStyleSheet("QWidget{border:1px solid black; background-color:black;}");
+    setObjectName("frameWidget");
+
+    // 加载样式表
+    QString styleSheet = Ui::loadStyleSheet("./setting/styles/frame_widget.qss");
+    if (!styleSheet.isEmpty()) {
+        this->setStyleSheet(styleSheet);
+    }
 }
 
 void FrameWidget::setFrame(const cv::Mat &bgr) {

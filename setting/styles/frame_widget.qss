@@ -1,0 +1,7 @@
+/* FrameWidget 样式表 */
+
+/* 视频帧显示窗口 */
+QWidget#frameWidget {
+    border: 1px solid black;
+    background-color: black;
+}

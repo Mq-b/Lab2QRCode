@@ -1,4 +1,5 @@
 #include "message_dialog.h"
+#include "UiConfig.h"
 #include <QApplication>
 #include <QGraphicsDropShadowEffect>
 #include <QHBoxLayout>
@@ -22,13 +23,6 @@ MessageDialog::MessageDialog(QWidget *parent)
     // ---------------- 背景容器 ----------------
     QWidget *bg = new QWidget(this);
     bg->setObjectName("bgWidget");
-    bg->setStyleSheet(R"(
-        #bgWidget {
-            background-color: rgb(243,243,243);
-            border-radius: 8px;
-            border: 1px solid rgb(220,220,220);
-        }
-    )");
 
     auto *shadow = new QGraphicsDropShadowEffect(this);
     shadow->setBlurRadius(20);
@@ -45,7 +39,7 @@ MessageDialog::MessageDialog(QWidget *parent)
     auto *headerLayout = new QVBoxLayout(header);
     headerLayout->setContentsMargins(15, 15, 15, 15);
     m_titleLabel = new QLabel(header);
-    m_titleLabel->setStyleSheet("font-size:16px; font-weight:500;");
+    m_titleLabel->setObjectName("titleLabel");
     m_titleLabel->setWordWrap(true);
     headerLayout->addWidget(m_titleLabel);
 
@@ -59,8 +53,7 @@ MessageDialog::MessageDialog(QWidget *parent)
 
     // ---------------- Bottom ----------------
     QWidget *bottom = new QWidget(bg);
-    bottom->setStyleSheet("background-color: rgb(238,238,238); border-bottom-left-radius:8px; "
-                          "border-bottom-right-radius:8px;");
+    bottom->setObjectName("bottomBar");
     bottom->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     auto *bottomLayout = new QHBoxLayout(bottom);
@@ -68,23 +61,8 @@ MessageDialog::MessageDialog(QWidget *parent)
     bottomLayout->setSpacing(0);
 
     m_closeBtn = new QPushButton("确定", bottom);
+    m_closeBtn->setObjectName("confirmButton");
     m_closeBtn->setFixedHeight(28);
-    m_closeBtn->setStyleSheet(R"(
-        QPushButton {
-            border: none;
-            border-radius: 4px;
-            background-color: rgb(25, 117, 197);
-            color: white;
-            padding: 6px 12px;
-            min-width: 80px;
-        }
-        QPushButton:hover {
-            background-color: rgb(0, 130, 220);
-        }
-        QPushButton:pressed {
-            background-color: rgb(0, 90, 170);
-        }
-    )");
 
     bottomLayout->addStretch();
     bottomLayout->addWidget(m_closeBtn);
@@ -99,6 +77,12 @@ MessageDialog::MessageDialog(QWidget *parent)
 
     // ---------------- 按钮信号 ----------------
     connect(m_closeBtn, &QPushButton::clicked, this, &QDialog::accept);
+
+    // 加载样式表
+    QString styleSheet = Ui::loadStyleSheet("./setting/styles/message_dialog.qss");
+    if (!styleSheet.isEmpty()) {
+        this->setStyleSheet(styleSheet);
+    }
 }
 
 MessageDialog::MessageDialog(QWidget *parent, const QStringList &buttons)
@@ -121,13 +105,6 @@ MessageDialog::MessageDialog(QWidget *parent, const QStringList &buttons)
     // ---------------- 背景容器 ----------------
     QWidget *bg = new QWidget(this);
     bg->setObjectName("bgWidget");
-    bg->setStyleSheet(R"(
-        #bgWidget {
-            background-color: rgb(243,243,243);
-            border-radius: 8px;
-            border: 1px solid rgb(220,220,220);
-        }
-    )");
 
     auto *shadow = new QGraphicsDropShadowEffect(bg);
     shadow->setBlurRadius(8);
@@ -146,16 +123,16 @@ MessageDialog::MessageDialog(QWidget *parent, const QStringList &buttons)
     auto *headerLayout = new QVBoxLayout(header);
     headerLayout->setContentsMargins(15, 15, 15, 15);
     m_titleLabel = new QLabel(header);
+    m_titleLabel->setObjectName("titleLabel");
     m_titleLabel->setWordWrap(true);
     m_titleLabel->setFont(globalsettings_font);
-    m_titleLabel->setStyleSheet("font-size:16px; font-weight:500;");
     headerLayout->addWidget(m_titleLabel);
 
     // ---------------- Content（滚动区） ----------------
     QScrollArea *scrollArea = new QScrollArea(bg);
+    scrollArea->setObjectName("messageScrollArea");
     scrollArea->setFrameShape(QFrame::NoFrame);
     scrollArea->setFrameShadow(QFrame::Plain);
-    scrollArea->setStyleSheet("background: transparent;"); // 透明背景
     scrollArea->setWidgetResizable(true);
 
     QWidget *contentWidget = new QWidget();
@@ -191,7 +168,7 @@ MessageDialog::MessageDialog(QWidget *parent, const QStringList &buttons)
     scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     // ---------------- Bottom ----------------
     QWidget *bottom = new QWidget(bg);
-    bottom->setStyleSheet("background-color: rgb(238,238,238)");
+    bottom->setObjectName("bottomBarSimple");
     auto *bottomLayout = new QHBoxLayout(bottom);
     bottomLayout->setContentsMargins(15, 10, 15, 10);
     bottomLayout->setSpacing(10);
@@ -201,24 +178,9 @@ MessageDialog::MessageDialog(QWidget *parent, const QStringList &buttons)
     btnFont.setBold(true);
     for (const QString &btnText : buttons) {
         QPushButton *btn = new QPushButton(btnText, bottom);
+        btn->setObjectName("dialogButton");
         btn->setFixedHeight(28);
         btn->setFont(btnFont);
-        btn->setStyleSheet(R"(
-            QPushButton {
-                border: none;
-                border-radius: 4px;
-                background-color: rgb(25, 117, 197);
-                color: white;
-                padding: 6px 12px;
-                min-width: 80px;
-            }
-            QPushButton:hover {
-                background-color: rgb(0, 130, 220);
-            }
-            QPushButton:pressed {
-                background-color: rgb(0, 90, 170);
-            }
-        )");
         connect(btn, &QPushButton::clicked, this, [this, btn]() {
             m_clickedButton = btn->text();
             accept();
@@ -242,6 +204,12 @@ MessageDialog::MessageDialog(QWidget *parent, const QStringList &buttons)
     // ---------------- 居中显示 ----------------
     QRect screenGeom = screen->availableGeometry();
     move(screenGeom.center() - rect().center());
+
+    // 加载样式表
+    QString styleSheet = Ui::loadStyleSheet("./setting/styles/message_dialog.qss");
+    if (!styleSheet.isEmpty()) {
+        this->setStyleSheet(styleSheet);
+    }
 }
 
 // 通用执行函数
