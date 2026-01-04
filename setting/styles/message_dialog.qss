@@ -1,0 +1,67 @@
+/* MessageDialog 样式表 */
+
+/* 背景容器 */
+#bgWidget {
+    background-color: rgb(243, 243, 243);
+    border-radius: 8px;
+    border: 1px solid rgb(220, 220, 220);
+}
+
+/* 标题标签 */
+QLabel#titleLabel {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* 底部栏 */
+QWidget#bottomBar {
+    background-color: rgb(238, 238, 238);
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* 简单版底部栏（没有设置圆角的情况） */
+QWidget#bottomBarSimple {
+    background-color: rgb(238, 238, 238);
+}
+
+/* 滚动区域（高级版本） */
+QScrollArea#messageScrollArea {
+    background: transparent;
+}
+
+/* 确定按钮 */
+QPushButton#confirmButton {
+    border: none;
+    border-radius: 4px;
+    background-color: rgb(25, 117, 197);
+    color: white;
+    padding: 6px 12px;
+    min-width: 80px;
+}
+
+QPushButton#confirmButton:hover {
+    background-color: rgb(0, 130, 220);
+}
+
+QPushButton#confirmButton:pressed {
+    background-color: rgb(0, 90, 170);
+}
+
+/* 通用按钮样式（多按钮对话框） */
+QPushButton#dialogButton {
+    border: none;
+    border-radius: 4px;
+    background-color: rgb(25, 117, 197);
+    color: white;
+    padding: 6px 12px;
+    min-width: 80px;
+}
+
+QPushButton#dialogButton:hover {
+    background-color: rgb(0, 130, 220);
+}
+
+QPushButton#dialogButton:pressed {
+    background-color: rgb(0, 90, 170);
+}

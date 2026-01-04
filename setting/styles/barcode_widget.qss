@@ -1,0 +1,164 @@
+/* BarcodeWidget 样式表 */
+
+/* 文件路径输入框 */
+QLineEdit#filePathEdit {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px;
+    background-color: #f9f9f9;
+}
+
+/* 浏览按钮 */
+QPushButton#browseButton {
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 5px;
+    padding: 10px;
+}
+
+QPushButton#browseButton:disabled {
+    background-color: #ddd;
+}
+
+/* 进度条 */
+QProgressBar#progressBar {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    text-align: center;
+    height: 20px;
+}
+
+QProgressBar#progressBar::chunk {
+    background-color: #4CAF50;
+    width: 1px;
+}
+
+/* 滚动区域 */
+QScrollArea#scrollArea {
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+}
+
+/* 宽度和高度输入框 */
+QLineEdit#widthInput,
+QLineEdit#heightInput {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 5px;
+    background-color: #f9f9f9;
+}
+
+/* 结果容器 */
+QWidget#resultContainer {
+    background-color: transparent;
+}
+
+/* 空状态标签 */
+QLabel#emptyLabel,
+QLabel#infoLabel {
+    font-size: 18px;
+    color: #aaa;
+}
+
+/* 文件列表头标签 */
+QLabel#headerLabel {
+    font-weight: bold;
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+/* 文件行容器 */
+QWidget#fileRowWidget {
+    border: 1px solid #ccc;
+    background-color: white;
+    border-radius: 4px;
+}
+
+QWidget#fileRowWidget:hover {
+    background-color: #f0f9ff;
+    border-color: #40a9ff;
+}
+
+/* 文件图标标签 */
+QLabel#fileIconLabel {
+    border: none;
+    background: transparent;
+}
+
+/* 文件名标签 */
+QLabel#fileNameLabel {
+    border: none;
+    background: transparent;
+    font-family: Consolas;
+    font-size: 14px;
+    color: #333;
+}
+
+/* 文件类型标签 */
+QLabel#fileTypeLabel {
+    border: none;
+    background: transparent;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+QLabel#fileTypeLabel[status="decode"] {
+    color: #67C23A;
+}
+
+QLabel#fileTypeLabel[status="generate"] {
+    color: #67C23A;
+}
+
+QLabel#fileTypeLabel[status="unknown"] {
+    color: #E6A23C;
+}
+
+/* 图片显示标签 */
+QLabel#imageLabel {
+    border: 1px solid #ddd;
+    background: white;
+}
+
+/* 文本显示标签 */
+QLabel#textLabel {
+    border: 1px solid #ddd;
+    background: white;
+    padding: 15px;
+    font-family: Consolas;
+    font-size: 14pt;
+}
+
+/* 网格中的文本标签（多结果） */
+QLabel#gridTextLabel {
+    border: 1px solid #ddd;
+    background: white;
+    padding: 5px;
+    font-family: Consolas;
+}
+
+/* 错误标签 */
+QLabel#errorLabel {
+    color: red;
+    border: 1px solid red;
+    background: #fff0f0;
+    padding: 15px;
+    font-size: 14pt;
+}
+
+/* 网格中的错误标签（多结果） */
+QLabel#gridErrorLabel {
+    font-size: 15pt;
+    color: red;
+    border: 1px solid red;
+    background: #fff0f0;
+    padding: 5px;
+}
+
+/* 结果文件名标签 */
+QLabel#resultNameLabel {
+    font-size: 10pt;
+    color: #333;
+    font-weight: bold;
+}
