@@ -2,6 +2,7 @@
 
 class QApplication;
 class QFont;
+class QString;
 
 struct UiConfig {
     std::string font_family;
@@ -31,4 +32,7 @@ public:
     // 获取应用程序字体（用于控件）
     static QFont getAppFont();
     static QFont getAppFont(int pointSize);
+
+    // 加载样式表文件
+    static QString loadStyleSheet(const QString &filename);
 };

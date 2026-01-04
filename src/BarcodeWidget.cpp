@@ -162,17 +162,14 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
 
     auto *fileLayout = new QHBoxLayout();
     filePathEdit = new QLineEdit(this);
+    filePathEdit->setObjectName("filePathEdit");
     filePathEdit->setPlaceholderText(tr("选择一个文件或图片"));
     filePathEdit->setFont(Ui::getAppFont(14));
-    filePathEdit->setStyleSheet(
-        "QLineEdit { border: 1px solid #ccc; border-radius: 5px; padding: 5px; background-color: #f9f9f9; }");
 
     browseButton = new QPushButton(tr("浏览"), this);
+    browseButton->setObjectName("browseButton");
     browseButton->setFixedWidth(100);
     browseButton->setFont(Ui::getAppFont(16));
-    browseButton->setStyleSheet(
-        "QPushButton { background-color: #4CAF50; color: white; border-radius: 5px; padding: 10px; }"
-        "QPushButton:disabled { background-color: #ddd; }");
     fileLayout->addWidget(filePathEdit);
     fileLayout->addWidget(browseButton);
     mainLayout->addLayout(fileLayout);
@@ -203,21 +200,18 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     mainLayout->addLayout(buttonLayout);
 
     progressBar = new QProgressBar(this);
+    progressBar->setObjectName("progressBar");
     progressBar->setRange(0, 100);
     progressBar->setValue(0);
     progressBar->setTextVisible(true); // 显示百分比文字
     progressBar->setVisible(false);    // 默认隐藏，只有批量处理时才显示
-    // 可选：设置一点样式让它更好看
-    progressBar->setStyleSheet(
-        "QProgressBar { border: 1px solid #ccc; border-radius: 5px; text-align: center; height: 20px; }"
-        "QProgressBar::chunk { background-color: #4CAF50; width: 1px; }");
     mainLayout->addWidget(progressBar);
 
     // 图片展示区域
     scrollArea = new QScrollArea(this);
+    scrollArea->setObjectName("scrollArea");
     scrollArea->setWidgetResizable(true);
     scrollArea->setMinimumHeight(320);
-    scrollArea->setStyleSheet("QScrollArea { background-color: #f0f0f0; border: 1px solid #ccc; }");
     mainLayout->addWidget(scrollArea);
 
     auto *comboBoxLayout = new QHBoxLayout();
@@ -240,17 +234,15 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
 
     widthLabel = new QLabel(tr("宽度:"), this);
     widthInput = new QLineEdit(this);
+    widthInput->setObjectName("widthInput");
     widthInput->setText("300"); // 默认宽度
     widthInput->setFont(Ui::getAppFont(13));
-    widthInput->setStyleSheet(
-        "QLineEdit { border: 1px solid #ccc; border-radius: 5px; padding: 5px; background-color: #f9f9f9; }");
 
     heightLabel = new QLabel(tr("高度:"), this);
     heightInput = new QLineEdit(this);
+    heightInput->setObjectName("heightInput");
     heightInput->setText("300"); // 默认高度
     heightInput->setFont(Ui::getAppFont(13));
-    heightInput->setStyleSheet(
-        "QLineEdit { border: 1px solid #ccc; border-radius: 5px; padding: 5px; background-color: #f9f9f9; }");
 
     sizeLayout->addWidget(widthLabel);
     sizeLayout->addWidget(widthInput);
@@ -363,6 +355,12 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     languageMgr.init();
     // 初始化多语言管理器的Action
     setupLanguageAction();
+
+    // 加载样式表
+    QString styleSheet = Ui::loadStyleSheet("./setting/styles/barcode_widget.qss");
+    if (!styleSheet.isEmpty()) {
+        this->setStyleSheet(styleSheet);
+    }
 }
 
 void BarcodeWidget::updateButtonStates() const {
@@ -824,14 +822,13 @@ QImage BarcodeWidget::MatToQImage(const cv::Mat &mat) const {
 
 void BarcodeWidget::renderResults() const {
     QWidget *container = new QWidget();
-    // 容器背景设为透明或跟随 ScrollArea
-    container->setStyleSheet("background-color: transparent;");
+    container->setObjectName("resultContainer");
 
     if (lastResults.empty() && directTextAction->isChecked()) {
         QVBoxLayout *vLayout = new QVBoxLayout(container);
         QLabel *infoLabel = new QLabel(tr("当前模式：直接文本生成\n请输入内容并点击生成"));
+        infoLabel->setObjectName("infoLabel");
         infoLabel->setAlignment(Qt::AlignCenter);
-        infoLabel->setStyleSheet("font-size: 18px; color: #aaa;");
         vLayout->addWidget(infoLabel);
         scrollArea->setWidget(container);
         return;
@@ -846,7 +843,7 @@ void BarcodeWidget::renderResults() const {
             listLayout->setAlignment(Qt::AlignTop);
 
             QLabel *headerLabel = new QLabel(QString(tr("已选择 %1 个文件，准备处理:")).arg(lastSelectedFiles.size()));
-            headerLabel->setStyleSheet("font-weight: bold; font-size: 14px; color: #555; margin-bottom: 5px;");
+            headerLabel->setObjectName("headerLabel");
             listLayout->addWidget(headerLabel);
 
             for (const QString &filePath : lastSelectedFiles) {
@@ -859,15 +856,7 @@ void BarcodeWidget::renderResults() const {
 
                 // 创建单行容器 Widget
                 QWidget *rowWidget = new QWidget();
-                rowWidget->setStyleSheet("QWidget {"
-                                         "   border: 1px solid #ccc;"
-                                         "   background-color: white;"
-                                         "   border-radius: 4px;"
-                                         "}"
-                                         "QWidget:hover {"
-                                         "   background-color: #f0f9ff;"
-                                         "   border-color: #40a9ff;"
-                                         "}");
+                rowWidget->setObjectName("fileRowWidget");
 
                 QHBoxLayout *rowLayout = new QHBoxLayout(rowWidget);
                 rowLayout->setContentsMargins(10, 8, 10, 8);
@@ -875,9 +864,8 @@ void BarcodeWidget::renderResults() const {
 
                 // 1. 图标 Label
                 QLabel *iconLabel = new QLabel();
+                iconLabel->setObjectName("fileIconLabel");
                 iconLabel->setFixedSize(24, 24);
-                // 清除父级样式表对 QLabel 边框的影响
-                iconLabel->setStyleSheet("border: none; background: transparent;");
 
                 // 2. 使用 QPainter 绘制动态图标 (避免依赖外部图片资源)
                 QPixmap iconPix(24, 24);
@@ -892,23 +880,22 @@ void BarcodeWidget::renderResults() const {
 
                 // 3. 文件名
                 QLabel *nameLabel = new QLabel(fileName);
-                nameLabel->setStyleSheet(
-                    "border: none; background: transparent; font-family: Consolas; font-size: 14px; color: #333;");
+                nameLabel->setObjectName("fileNameLabel");
                 nameLabel->setToolTip(filePath); // 鼠标悬停显示完整路径
 
                 // 4. 类型/操作提示标签
                 QLabel *typeLabel = new QLabel();
-                typeLabel->setStyleSheet("border: none; background: transparent; font-size: 12px; font-weight: bold;");
+                typeLabel->setObjectName("fileTypeLabel");
 
                 if (isImage) {
                     typeLabel->setText(tr("[待解码]"));
-                    typeLabel->setStyleSheet(typeLabel->styleSheet() + "color: #67C23A;"); // 橙色提示解码
+                    typeLabel->setProperty("status", "decode");
                 } else if (isText) {
                     typeLabel->setText(tr("[待生成]"));
-                    typeLabel->setStyleSheet(typeLabel->styleSheet() + "color: #67C23A;"); // 绿色提示生成
+                    typeLabel->setProperty("status", "generate");
                 } else {
                     typeLabel->setText(tr("[不确定类型，默认待生成]"));
-                    typeLabel->setStyleSheet(typeLabel->styleSheet() + "color: #E6A23C;");
+                    typeLabel->setProperty("status", "unknown");
                 }
 
                 // 布局添加
@@ -925,8 +912,8 @@ void BarcodeWidget::renderResults() const {
             // 无文件选中且无结果
             QVBoxLayout *vLayout = new QVBoxLayout(container);
             QLabel *emptyLabel = new QLabel(tr("请选择文件\n或者键入内容"));
+            emptyLabel->setObjectName("emptyLabel");
             emptyLabel->setAlignment(Qt::AlignCenter);
-            emptyLabel->setStyleSheet("font-size: 18px; color: #aaa;");
             vLayout->addWidget(emptyLabel);
         }
     } else if (lastResults.size() == 1) {
@@ -943,9 +930,9 @@ void BarcodeWidget::renderResults() const {
                 std::in_place_type<void>,
                 [&](const QImage &img) {
                     QLabel *imgLabel = new QLabel();
+                    imgLabel->setObjectName("imageLabel");
                     imgLabel->setPixmap(QPixmap::fromImage(img));
                     imgLabel->setAlignment(Qt::AlignCenter);
-                    imgLabel->setStyleSheet("border: 1px solid #ddd; background: white;");
                     imgLabel->setToolTip(QString("Size: %1x%2").arg(img.width()).arg(img.height()));
 
                     // [修改] 将最小尺寸设置为图片尺寸，确保大图能撑开 ScrollArea 出现滚动条
@@ -955,6 +942,7 @@ void BarcodeWidget::renderResults() const {
                 },
                 [&](const QByteArray &data) {
                     QLabel *textLabel = new QLabel();
+                    textLabel->setObjectName("textLabel");
                     // 显示完整解码内容
                     QString textDisplay = QString::fromUtf8(data);
 
@@ -962,17 +950,12 @@ void BarcodeWidget::renderResults() const {
                     textLabel->setWordWrap(true);
 
                     textLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-
-                    // 确保不使用 QTextEdit，这里使用 QLabel
-                    textLabel->setStyleSheet(
-                        "border: 1px solid #ddd; background: white; padding: 15px; font-family: Consolas; font-size: 14pt;");
                     textLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred); // 允许内容撑开
                     contentWidget = textLabel;
                 },
                 [&](const std::string &str) {
                     QLabel *errLabel = new QLabel(QString::fromStdString(str));
-                    errLabel->setStyleSheet(
-                        "color: red; border: 1px solid red; background: #fff0f0; padding: 15px; font-size: 14pt;");
+                    errLabel->setObjectName("errorLabel");
                     errLabel->setWordWrap(true);
 
                     errLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -1010,17 +993,18 @@ void BarcodeWidget::renderResults() const {
                     // 图片类型，显示缩略图
                     [&](const QImage &img) {
                         QLabel *imgLabel = new QLabel();
+                        imgLabel->setObjectName("imageLabel");
                         // 使用缩略图大小 200x200
                         imgLabel->setPixmap(
                             QPixmap::fromImage(img).scaled(200, 200, Qt::KeepAspectRatio, Qt::SmoothTransformation));
                         imgLabel->setAlignment(Qt::AlignCenter);
-                        imgLabel->setStyleSheet("border: 1px solid #ddd; background: white;");
                         imgLabel->setToolTip(QString("Size: %1x%2").arg(img.width()).arg(img.height()));
                         contentWidget = imgLabel;
                     },
                     // 文本类型，显示前200字符 (截断)
                     [&](const QByteArray &data) {
                         QLabel *textLabel = new QLabel();
+                        textLabel->setObjectName("gridTextLabel");
                         QString textDisplay = QString::fromUtf8(data);
                         if (textDisplay.length() > 256) {
                             textDisplay = textDisplay.left(256) + "...";
@@ -1029,17 +1013,13 @@ void BarcodeWidget::renderResults() const {
                         textLabel->setWordWrap(true);
 
                         textLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-
-                        textLabel->setStyleSheet(
-                            "border: 1px solid #ddd; background: white; padding: 5px; font-family: Consolas;");
                         textLabel->setFixedSize(200, 200);
                         contentWidget = textLabel;
                     },
                     // 错误信息，显示解码或生成的错误内容
                     [&](const std::string &str) {
                         QLabel *errLabel = new QLabel(QString::fromStdString(str));
-                        errLabel->setStyleSheet(
-                            "font-size: 15pt; color: red; border: 1px solid red; background: #fff0f0; padding: 5px;");
+                        errLabel->setObjectName("gridErrorLabel");
                         errLabel->setWordWrap(true);
 
                         errLabel->setAlignment(Qt::AlignTop | Qt::AlignLeft);
@@ -1057,8 +1037,8 @@ void BarcodeWidget::renderResults() const {
                 }
 
                 QLabel *nameLabel = new QLabel(fileNameStr);
+                nameLabel->setObjectName("resultNameLabel");
                 nameLabel->setAlignment(Qt::AlignCenter);
-                nameLabel->setStyleSheet("font-size: 10pt; color: #333; font-weight: bold;");
                 nameLabel->setFixedWidth(200);
                 nameLabel->setToolTip(entry.source_file_name);
 

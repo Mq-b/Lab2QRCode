@@ -1,0 +1,12 @@
+/* CameraWidget 样式表 */
+
+/* 条码状态标签 - 默认状态（清除样式） */
+QLabel#barcodeStatusLabel {
+    /* 默认无样式 */
+}
+
+/* 条码状态标签 - 检测到条码状态 */
+QLabel#barcodeStatusLabel[detected="true"] {
+    color: green;
+    font-weight: bold;
+}
