@@ -28,6 +28,10 @@ if(MSVC)
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
+if(WIN32)
+    add_definitions(-D_WIN32_WINNT=0x0A00)
+endif()
+
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets Concurrent Multimedia MultimediaWidgets LinguistTools)
 find_package(Threads REQUIRED)
 find_package(ZXing REQUIRED)
