@@ -8,6 +8,7 @@
 #include <qfuturewatcher.h>
 
 #include "CameraWidget.h"
+#include "UpdateChecker.h"
 #include "convert.h"
 #include "mqtt/MQTTMessageWidget.h"
 #include "mqtt/mqtt_client.h"
@@ -122,6 +123,12 @@ private slots:
      */
     static ZXing::BarcodeFormat stringToBarcodeFormat(const QString &formatStr);
 
+    /**
+     * @brief 在程序启动时与服务器通信判断是否需要更新
+     *
+     */
+    void checkUpdateOnStartup();
+
 private:
     /**
      * @brief 初始化语言切换的Action
@@ -173,4 +180,5 @@ private:
     std::unique_ptr<MqttSubscriber> subscriber_;                              /**< MQTT订阅者实例 */
     std::unique_ptr<MQTTMessageWidget> messageWidget;                         /**< MQTT消息展示窗口 */
     CameraWidget preview;                                                     /**< 摄像头预览窗口 */
+    UpdateChecker *m_updateChecker = nullptr;                                 /**< 版本检查实例 */
 };

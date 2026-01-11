@@ -7,6 +7,7 @@
 #include "version_info/version.h"
 #include <QCheckBox>
 #include <QComboBox>
+#include <QDesktopServices>
 #include <QFileDialog>
 #include <QFont>
 #include <QFutureWatcher>
@@ -361,6 +362,8 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     if (!styleSheet.isEmpty()) {
         this->setStyleSheet(styleSheet);
     }
+    // 进行版本检查
+    QTimer::singleShot(0, this, &BarcodeWidget::checkUpdateOnStartup);
 }
 
 void BarcodeWidget::updateButtonStates() const {
@@ -1117,6 +1120,46 @@ ZXing::BarcodeFormat BarcodeWidget::stringToBarcodeFormat(const QString &formatS
     key[0] = key[0].toUpper(); // 确保首字母大写以匹配上面的key
 
     return map.value(key, ZXing::BarcodeFormat::None); // 未匹配时返回None
+}
+
+void BarcodeWidget::checkUpdateOnStartup() {
+    if (!m_updateChecker) {
+        m_updateChecker = new UpdateChecker(this);
+    }
+    // 后端接口地址
+    QUrl apiUrl("http://106.14.192.58:10000/update/check_version");
+    // 获取当前版本和架构
+    //QString version = version::git_tag.data();
+    //QString architecture = version::architecture.data();
+    QString test_version = "v1.0";
+    QString test_os = "windows-x64";
+    UpdateCheckRequest request(test_version, test_os);
+    // 连接信号
+    connect(m_updateChecker, &UpdateChecker::UpdateAvailable, this, [this](const UpdateInfo &info) {
+        QMessageBox box(this);
+        box.setWindowTitle("发现新版本");
+        box.setText(QString("最新版本：%1\n\n更新日志：\n%2\n\n更新链接：%3\n")
+                        .arg(info.latest, info.changeLog, info.downloadUrl));
+
+        QPushButton *btnUpdate = box.addButton("立即更新", QMessageBox::AcceptRole);
+        QPushButton *btnLater = box.addButton("稍后再说", QMessageBox::RejectRole);
+
+        box.exec();
+
+        if (box.clickedButton() == btnUpdate) {
+            QDesktopServices::openUrl(QUrl(info.downloadUrl));
+        } else if (box.clickedButton() == btnLater) {
+            // 关闭弹窗即可；exec() 返回后 box 会析构
+        }
+    });
+    connect(m_updateChecker, &UpdateChecker::NoUpdate, this, []() { spdlog::info("No update!"); });
+
+    connect(m_updateChecker, &UpdateChecker::ErrorOccured, this, [](const QString &msg) {
+        spdlog::error("UpdateCheck Error, Error Message: {}", msg.toStdString());
+    });
+
+    // 发起检查
+    m_updateChecker->Check(apiUrl, request);
 }
 
 void BarcodeWidget::setupLanguageAction() {
