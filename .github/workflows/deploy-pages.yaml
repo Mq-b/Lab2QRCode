@@ -37,7 +37,7 @@ jobs:
 
       - name: Configure base path for GitHub Pages
         run:  |
-          sed -i "/export default defineConfig(({ mode }) => ({/a \ \ base: '/Lab2QRCode/'," vite.config. ts
+          sed -i "/export default defineConfig(({ mode }) => ({/a \ \ base: '/Lab2QRCode/'," vite.config.ts
           echo "=== vite.config.ts after modification ==="
           cat vite.config.ts
 
