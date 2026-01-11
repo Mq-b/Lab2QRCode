@@ -260,7 +260,7 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
         config.host, config.port, config.client_id, [this](const std::string &topic, const std::string &payload) {
             emit mqttMessageReceived(QString::fromStdString(topic), QByteArray::fromStdString(payload));
         });
-    subscriber_->subscribe("test/topic");
+    subscriber_->subscribe(config.topic);
 
     messageWidget = std::make_unique<MQTTMessageWidget>();
 
