@@ -16,6 +16,7 @@ struct MqttConfig {
     std::string host;
     uint16_t port;
     std::string client_id;
+    std::string topic;
 };
 
 /**
