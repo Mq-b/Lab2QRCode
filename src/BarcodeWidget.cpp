@@ -121,7 +121,8 @@ static QRegularExpression fileExtensionRegex_image(R"(^.*\.(?:png|jpg|jpeg|bmp|g
 BarcodeWidget::BarcodeWidget(QWidget *parent)
     : QWidget(parent) {
     setWindowTitle("Lab2QRCode");
-    setMinimumSize(500, 600);
+    // todo.. 后续根据系统分辨率缩放等来设置合适的初始窗口大小
+    setMinimumSize(850, 800);
 
     menuBar = new QMenuBar();
     helpMenu = menuBar->addMenu(tr("帮助"));
@@ -172,7 +173,7 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
 
     browseButton = new QPushButton(tr("浏览"), this);
     browseButton->setObjectName("browseButton");
-    browseButton->setFixedWidth(100);
+    browseButton->setFixedWidth(120);
     browseButton->setFont(Ui::getAppFont(16));
     fileLayout->addWidget(filePathEdit);
     fileLayout->addWidget(browseButton);
@@ -183,9 +184,9 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     generateButton = new QPushButton(tr("生成"), this);
     decodeToChemFile = new QPushButton(tr("解码"));
     saveButton = new QPushButton(tr("保存"), this);
-    generateButton->setFixedHeight(40);
-    saveButton->setFixedHeight(40);
-    decodeToChemFile->setFixedHeight(40);
+    generateButton->setFixedHeight(50);
+    saveButton->setFixedHeight(50);
+    decodeToChemFile->setFixedHeight(50);
     generateButton->setFont(Ui::getAppFont(16));
     decodeToChemFile->setFont(Ui::getAppFont(16));
     saveButton->setFont(Ui::getAppFont(16));
@@ -221,19 +222,22 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     QWidget *configWidget = new QWidget(this);
     configWidget->setObjectName("configWidget");
     QGridLayout *configMainLayout = new QGridLayout(configWidget);
-    configMainLayout->setContentsMargins(15, 10, 15, 10);
-    configMainLayout->setHorizontalSpacing(15);
-    configMainLayout->setVerticalSpacing(8);
+    configMainLayout->setContentsMargins(15, 12, 15, 12);
+    configMainLayout->setHorizontalSpacing(12);
+    configMainLayout->setVerticalSpacing(10);
 
     imageSizeConfig = ImageSizeConfig::loadFromConfig("./setting/config.json");
 
-    formatLabel = new QLabel(tr("选择条码类型:"), this);
+    formatLabel = new QLabel(tr("条码类型:"), this);
     formatLabel->setObjectName("configLabel");
     formatLabel->setFont(Ui::getAppFont(12));
+    formatLabel->setMinimumWidth(100);
+    formatLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     QComboBox *formatComboBox = new QComboBox(this);
+    formatComboBox->setObjectName("formatComboBox");
     formatComboBox->setFont(Ui::getAppFont(11));
-    formatComboBox->setFixedWidth(180);
+    formatComboBox->setFixedWidth(200);
     for (const auto &item : qAsConst(barcodeFormats)) {
         formatComboBox->addItem(item);
     }
@@ -242,43 +246,52 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     widthLabel = new QLabel(tr("宽度:"), this);
     widthLabel->setObjectName("configLabel");
     widthLabel->setFont(Ui::getAppFont(12));
+    widthLabel->setMinimumWidth(55);
+    widthLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     widthInput = new QLineEdit(this);
     widthInput->setObjectName("configInput");
     widthInput->setText(QString::number(imageSizeConfig.width));
     widthInput->setFont(Ui::getAppFont(11));
-    widthInput->setFixedWidth(80);
+    widthInput->setFixedWidth(90);
 
     heightLabel = new QLabel(tr("高度:"), this);
     heightLabel->setObjectName("configLabel");
     heightLabel->setFont(Ui::getAppFont(12));
+    heightLabel->setMinimumWidth(55);
+    heightLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     heightInput = new QLineEdit(this);
     heightInput->setObjectName("configInput");
     heightInput->setText(QString::number(imageSizeConfig.height));
     heightInput->setFont(Ui::getAppFont(11));
-    heightInput->setFixedWidth(80);
+    heightInput->setFixedWidth(90);
 
     unitLabel = new QLabel(tr("单位:"), this);
     unitLabel->setObjectName("configLabel");
     unitLabel->setFont(Ui::getAppFont(12));
+    unitLabel->setMinimumWidth(55);
+    unitLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     unitComboBox = new QComboBox(this);
+    unitComboBox->setObjectName("unitComboBox");
     unitComboBox->addItem(tr("像素"), static_cast<int>(SizeUnit::Pixel));
     unitComboBox->addItem(tr("厘米"), static_cast<int>(SizeUnit::Centimeter));
     unitComboBox->setCurrentIndex(imageSizeConfig.unit == SizeUnit::Pixel ? 0 : 1);
     unitComboBox->setFont(Ui::getAppFont(11));
-    unitComboBox->setFixedWidth(80);
+    unitComboBox->setFixedWidth(90);
 
     ppiLabel = new QLabel(tr("PPI:"), this);
     ppiLabel->setObjectName("configLabel");
     ppiLabel->setFont(Ui::getAppFont(12));
+    ppiLabel->setMinimumWidth(55);
+    ppiLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
     ppiInput = new QLineEdit(this);
     ppiInput->setObjectName("configInput");
     ppiInput->setText(QString::number(imageSizeConfig.ppi));
     ppiInput->setFont(Ui::getAppFont(11));
-    ppiInput->setFixedWidth(80);
+    ppiInput->setFixedWidth(90);
     ppiInput->setToolTip(tr("每英寸像素数（用于厘米到像素的转换）"));
 
     configMainLayout->addWidget(formatLabel, 0, 0, Qt::AlignRight);
@@ -1272,7 +1285,7 @@ void BarcodeWidget::retranslate() {
     saveButton->setText(tr("保存"));
     generateButton->setToolTip(tr("请选择任意文件来生成条码"));
     decodeToChemFile->setToolTip(tr("可以解码PNG图片中的条码"));
-    formatLabel->setText(tr("选择条码类型:"));
+    formatLabel->setText(tr("条码类型:"));
     widthLabel->setText(tr("宽度:"));
     heightLabel->setText(tr("高度:"));
     unitLabel->setText(tr("单位:"));
