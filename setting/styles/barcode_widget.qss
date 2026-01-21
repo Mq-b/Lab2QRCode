@@ -6,6 +6,7 @@ QLineEdit#filePathEdit {
     border-radius: 5px;
     padding: 5px;
     background-color: #f9f9f9;
+    color: #333;
 }
 
 /* 浏览按钮 */
@@ -44,6 +45,7 @@ QWidget#configWidget {
     background-color: #fafafa;
     border: 1px solid #d9d9d9;
     border-radius: 6px;
+    padding: 5px;
 }
 
 /* 配置标签 */
@@ -52,12 +54,30 @@ QLabel#configLabel {
     font-weight: 500;
 }
 
+/* 下拉框 */
+QComboBox {
+    color: #333;
+    background-color: white;
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+QComboBox QAbstractItemView {
+    color: #333;
+    background-color: white;
+    selection-background-color: #4CAF50;
+    selection-color: white;
+}
+
 /* 配置输入框 */
 QLineEdit#configInput {
     border: 1px solid #d9d9d9;
     border-radius: 4px;
     padding: 5px 8px;
     background-color: white;
+    color: #333;
 }
 
 QLineEdit#configInput:focus {
@@ -72,6 +92,7 @@ QLineEdit#heightInput {
     border-radius: 5px;
     padding: 5px;
     background-color: #f9f9f9;
+    color: #333;
 }
 
 /* 结果容器 */

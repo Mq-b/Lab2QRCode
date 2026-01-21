@@ -11,6 +11,7 @@
 #include <QFileDialog>
 #include <QFont>
 #include <QFutureWatcher>
+#include <QGridLayout>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -217,19 +218,14 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     scrollArea->setMinimumHeight(320);
     mainLayout->addWidget(scrollArea);
 
-    // 创建参数配置区域容器
     QWidget *configWidget = new QWidget(this);
     configWidget->setObjectName("configWidget");
-    QVBoxLayout *configMainLayout = new QVBoxLayout(configWidget);
-    configMainLayout->setContentsMargins(20, 12, 20, 12);
-    configMainLayout->setSpacing(10);
+    QGridLayout *configMainLayout = new QGridLayout(configWidget);
+    configMainLayout->setContentsMargins(15, 10, 15, 10);
+    configMainLayout->setHorizontalSpacing(15);
+    configMainLayout->setVerticalSpacing(8);
 
-    // 加载图像尺寸配置
     imageSizeConfig = ImageSizeConfig::loadFromConfig("./setting/config.json");
-
-    // 第一行：条码类型
-    auto *formatLayout = new QHBoxLayout();
-    formatLayout->setSpacing(10);
 
     formatLabel = new QLabel(tr("选择条码类型:"), this);
     formatLabel->setObjectName("configLabel");
@@ -243,15 +239,6 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     }
     formatComboBox->setCurrentText("QRCode");
 
-    formatLayout->addWidget(formatLabel);
-    formatLayout->addWidget(formatComboBox);
-    formatLayout->addStretch();
-    configMainLayout->addLayout(formatLayout);
-
-    // 第二行：宽度和高度
-    auto *row2Layout = new QHBoxLayout();
-    row2Layout->setSpacing(10);
-
     widthLabel = new QLabel(tr("宽度:"), this);
     widthLabel->setObjectName("configLabel");
     widthLabel->setFont(Ui::getAppFont(12));
@@ -260,7 +247,7 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     widthInput->setObjectName("configInput");
     widthInput->setText(QString::number(imageSizeConfig.width));
     widthInput->setFont(Ui::getAppFont(11));
-    widthInput->setFixedWidth(70);
+    widthInput->setFixedWidth(80);
 
     heightLabel = new QLabel(tr("高度:"), this);
     heightLabel->setObjectName("configLabel");
@@ -270,19 +257,7 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     heightInput->setObjectName("configInput");
     heightInput->setText(QString::number(imageSizeConfig.height));
     heightInput->setFont(Ui::getAppFont(11));
-    heightInput->setFixedWidth(70);
-
-    row2Layout->addWidget(widthLabel);
-    row2Layout->addWidget(widthInput);
-    row2Layout->addStretch();
-    row2Layout->addWidget(heightLabel);
-    row2Layout->addWidget(heightInput);
-
-    configMainLayout->addLayout(row2Layout);
-
-    // 第三行：单位和PPI
-    auto *row3Layout = new QHBoxLayout();
-    row3Layout->setSpacing(10);
+    heightInput->setFixedWidth(80);
 
     unitLabel = new QLabel(tr("单位:"), this);
     unitLabel->setObjectName("configLabel");
@@ -293,7 +268,7 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     unitComboBox->addItem(tr("厘米"), static_cast<int>(SizeUnit::Centimeter));
     unitComboBox->setCurrentIndex(imageSizeConfig.unit == SizeUnit::Pixel ? 0 : 1);
     unitComboBox->setFont(Ui::getAppFont(11));
-    unitComboBox->setFixedWidth(70);
+    unitComboBox->setFixedWidth(80);
 
     ppiLabel = new QLabel(tr("PPI:"), this);
     ppiLabel->setObjectName("configLabel");
@@ -303,16 +278,22 @@ BarcodeWidget::BarcodeWidget(QWidget *parent)
     ppiInput->setObjectName("configInput");
     ppiInput->setText(QString::number(imageSizeConfig.ppi));
     ppiInput->setFont(Ui::getAppFont(11));
-    ppiInput->setFixedWidth(70);
+    ppiInput->setFixedWidth(80);
     ppiInput->setToolTip(tr("每英寸像素数（用于厘米到像素的转换）"));
 
-    row3Layout->addWidget(unitLabel);
-    row3Layout->addWidget(unitComboBox);
-    row3Layout->addStretch();
-    row3Layout->addWidget(ppiLabel);
-    row3Layout->addWidget(ppiInput);
+    configMainLayout->addWidget(formatLabel, 0, 0, Qt::AlignRight);
+    configMainLayout->addWidget(formatComboBox, 0, 1);
+    configMainLayout->addWidget(widthLabel, 0, 2, Qt::AlignRight);
+    configMainLayout->addWidget(widthInput, 0, 3);
+    configMainLayout->addWidget(heightLabel, 0, 4, Qt::AlignRight);
+    configMainLayout->addWidget(heightInput, 0, 5);
 
-    configMainLayout->addLayout(row3Layout);
+    configMainLayout->addWidget(unitLabel, 1, 0, Qt::AlignRight);
+    configMainLayout->addWidget(unitComboBox, 1, 1);
+    configMainLayout->addWidget(ppiLabel, 1, 2, Qt::AlignRight);
+    configMainLayout->addWidget(ppiInput, 1, 3);
+
+    configMainLayout->setColumnStretch(6, 1);
 
     mainLayout->addWidget(configWidget);
 
@@ -605,6 +586,7 @@ void BarcodeWidget::onGenerateClicked() {
         int reqHeight;
         int finalWidth;  // 最终目标宽度
         int finalHeight; // 最终目标高度
+        int targePPI;    // 目标PPI用于设置DPM
         bool useBase64;
         ZXing::BarcodeFormat format;
 
@@ -638,6 +620,13 @@ void BarcodeWidget::onGenerateClicked() {
                 if (!img.isNull()) {
                     // 缩放图像到精确尺寸
                     img = convert::resizeImageToExactSize(img, finalWidth, finalHeight);
+
+                    // 设置图像DPI/DPM元数据
+                    int ppi = targePPI;
+                    int dpm = static_cast<int>(ppi / 0.0254);
+                    img.setDotsPerMeterX(dpm);
+                    img.setDotsPerMeterY(dpm);
+
                     res.data = img;
                 } else {
                     res.data = QString(tr("生成图片失败")).toStdString();
@@ -664,7 +653,7 @@ void BarcodeWidget::onGenerateClicked() {
         watcher, &QFutureWatcher<convert::result_data_entry>::finished, [this, watcher] { onBatchFinish(*watcher); });
 
     watcher->setFuture(QtConcurrent::mapped(
-        filePaths, worker{targetWidth, targetHeight, targetWidth, targetHeight, useBase64, format}));
+        filePaths, worker{targetWidth, targetHeight, targetWidth, targetHeight, targePPI, useBase64, format}));
 }
 
 void BarcodeWidget::onDecodeToChemFileClicked() {
