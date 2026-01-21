@@ -3,7 +3,7 @@
 /.cache
 /.vscode
 /out
-/.claude
+/.claude/skills/ui-ux-pro-max
 CMakePresets.json
 CMakeUserPresets.json
 version.cpp
