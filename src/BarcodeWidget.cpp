@@ -1291,6 +1291,8 @@ void BarcodeWidget::retranslate() {
     unitLabel->setText(tr("单位:"));
     ppiLabel->setText(tr("PPI:"));
     ppiInput->setToolTip(tr("每英寸像素数（用于厘米到像素的转换）"));
+    unitComboBox->setItemText(unitComboBox->findData(static_cast<int>(SizeUnit::Pixel)), tr("像素"));
+    unitComboBox->setItemText(unitComboBox->findData(static_cast<int>(SizeUnit::Centimeter)), tr("厘米"));
     // 调用该函数触发正确的显示
     renderResults();
 }
