@@ -193,11 +193,13 @@
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="278"/>
+        <location filename="../src/BarcodeWidget.cpp" line="1294"/>
         <source>像素</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="279"/>
+        <location filename="../src/BarcodeWidget.cpp" line="1295"/>
         <source>厘米</source>
         <translation type="unfinished"></translation>
     </message>

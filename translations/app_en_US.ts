@@ -41,12 +41,12 @@
     <message>
         <location filename="../src/about_dialog.cpp" line="60"/>
         <source>⚙️ 内核版本:</source>
-        <translation>⚙️ Kernel version:</translation>
+        <translation>⚙️ Kernel Version:</translation>
     </message>
     <message>
         <location filename="../src/about_dialog.cpp" line="61"/>
         <source>🧩 架构类型:</source>
-        <translation>🧩 Architecture type:</translation>
+        <translation>🧩 Architecture Type:</translation>
     </message>
     <message>
         <location filename="../src/about_dialog.cpp" line="76"/>
@@ -71,7 +71,7 @@
     <message>
         <location filename="../src/about_dialog.cpp" line="164"/>
         <source>未知</source>
-        <translation>unknown</translation>
+        <translation>Unknown</translation>
     </message>
 </context>
 <context>
@@ -80,25 +80,25 @@
         <location filename="../src/BarcodeWidget.cpp" line="128"/>
         <location filename="../src/BarcodeWidget.cpp" line="1272"/>
         <source>帮助</source>
-        <translation>help</translation>
+        <translation>Help</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="129"/>
         <location filename="../src/BarcodeWidget.cpp" line="1273"/>
         <source>工具</source>
-        <translation>tool</translation>
+        <translation>Tools</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="130"/>
         <location filename="../src/BarcodeWidget.cpp" line="1274"/>
         <source>设置</source>
-        <translation>settings</translation>
+        <translation>Settings</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="135"/>
         <location filename="../src/BarcodeWidget.cpp" line="1276"/>
         <source>关于软件</source>
-        <translation>About the software</translation>
+        <translation>About App</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="136"/>
@@ -122,7 +122,7 @@
         <location filename="../src/BarcodeWidget.cpp" line="143"/>
         <location filename="../src/BarcodeWidget.cpp" line="1280"/>
         <source>文本输入</source>
-        <translation>Text input</translation>
+        <translation>Text Input</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="171"/>
@@ -141,19 +141,19 @@
         <location filename="../src/BarcodeWidget.cpp" line="184"/>
         <location filename="../src/BarcodeWidget.cpp" line="1283"/>
         <source>生成</source>
-        <translation>generate</translation>
+        <translation>Generate</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="185"/>
         <location filename="../src/BarcodeWidget.cpp" line="1284"/>
         <source>解码</source>
-        <translation>decode</translation>
+        <translation>Decode</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="186"/>
         <location filename="../src/BarcodeWidget.cpp" line="1285"/>
         <source>保存</source>
-        <translation>save</translation>
+        <translation>Save</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="194"/>
@@ -177,13 +177,13 @@
         <location filename="../src/BarcodeWidget.cpp" line="246"/>
         <location filename="../src/BarcodeWidget.cpp" line="1289"/>
         <source>宽度:</source>
-        <translation>width:</translation>
+        <translation>Width:</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="258"/>
         <location filename="../src/BarcodeWidget.cpp" line="1290"/>
         <source>高度:</source>
-        <translation>height:</translation>
+        <translation>Height:</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="270"/>
@@ -193,11 +193,13 @@
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="278"/>
+        <location filename="../src/BarcodeWidget.cpp" line="1294"/>
         <source>像素</source>
         <translation>PX</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="279"/>
+        <location filename="../src/BarcodeWidget.cpp" line="1295"/>
         <source>厘米</source>
         <translation>CM</translation>
     </message>
@@ -338,7 +340,7 @@ Failed: %3</translation>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="903"/>
         <source>保存成功</source>
-        <translation>Saved successfully</translation>
+        <translation>Saved Successfully</translation>
     </message>
     <message>
         <location filename="../src/BarcodeWidget.cpp" line="949"/>
@@ -379,7 +381,7 @@ or enter content</translation>
         <location filename="../src/BarcodeWidget.cpp" line="131"/>
         <location filename="../src/BarcodeWidget.cpp" line="1275"/>
         <source>语言</source>
-        <translation>language</translation>
+        <translation>Language</translation>
     </message>
 </context>
 <context>
